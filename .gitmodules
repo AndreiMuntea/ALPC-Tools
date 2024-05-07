@@ -1,0 +1,9 @@
+[submodule "submodules/XPlatform-MiniLib"]
+	path = submodules/XPlatform-MiniLib
+	url = https://github.com/AndreiMuntea/XPlatform-MiniLib.git
+[submodule "submodules/cpplint"]
+	path = submodules/cpplint
+	url = https://github.com/cpplint/cpplint.git
+[submodule "submodules/Detours"]
+	path = submodules/Detours
+	url = https://github.com/microsoft/Detours.git

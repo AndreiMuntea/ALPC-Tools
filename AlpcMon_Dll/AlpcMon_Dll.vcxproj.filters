@@ -1,0 +1,87 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="Header Files\extern">
+      <UniqueIdentifier>{54f1caa5-d7bf-4571-b980-4e46dadc5e59}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\extern">
+      <UniqueIdentifier>{851175b2-3579-4c86-be04-9d34d552ecd1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\extern\detours">
+      <UniqueIdentifier>{30806096-9cdf-48ae-9409-2f1a8ff2f256}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\extern\detours">
+      <UniqueIdentifier>{919eceb8-289d-4823-9ac7-18cfd7102179}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="DllMain.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="HookEngine.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\submodules\Detours\src\creatwth.cpp">
+      <Filter>Source Files\extern\detours</Filter>
+    </ClCompile>
+    <ClCompile Include="..\submodules\Detours\src\detours.cpp">
+      <Filter>Source Files\extern\detours</Filter>
+    </ClCompile>
+    <ClCompile Include="..\submodules\Detours\src\disasm.cpp">
+      <Filter>Source Files\extern\detours</Filter>
+    </ClCompile>
+    <ClCompile Include="..\submodules\Detours\src\disolarm.cpp">
+      <Filter>Source Files\extern\detours</Filter>
+    </ClCompile>
+    <ClCompile Include="..\submodules\Detours\src\disolarm64.cpp">
+      <Filter>Source Files\extern\detours</Filter>
+    </ClCompile>
+    <ClCompile Include="..\submodules\Detours\src\disolia64.cpp">
+      <Filter>Source Files\extern\detours</Filter>
+    </ClCompile>
+    <ClCompile Include="..\submodules\Detours\src\disolx64.cpp">
+      <Filter>Source Files\extern\detours</Filter>
+    </ClCompile>
+    <ClCompile Include="..\submodules\Detours\src\disolx86.cpp">
+      <Filter>Source Files\extern\detours</Filter>
+    </ClCompile>
+    <ClCompile Include="..\submodules\Detours\src\image.cpp">
+      <Filter>Source Files\extern\detours</Filter>
+    </ClCompile>
+    <ClCompile Include="..\submodules\Detours\src\modules.cpp">
+      <Filter>Source Files\extern\detours</Filter>
+    </ClCompile>
+    <ClCompile Include="AlpcMon.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="HookEngine.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\submodules\Detours\src\detours.h">
+      <Filter>Header Files\extern\detours</Filter>
+    </ClInclude>
+    <ClInclude Include="..\submodules\Detours\src\detver.h">
+      <Filter>Header Files\extern\detours</Filter>
+    </ClInclude>
+    <ClInclude Include="AlpcMon.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="UmKmComms.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>

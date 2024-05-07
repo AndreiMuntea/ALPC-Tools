@@ -1,0 +1,78 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="Header Files\Dce-Ndr">
+      <UniqueIdentifier>{bb04a781-ec49-4cf8-91ab-5d50e7d93b13}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\ALPC-RPC">
+      <UniqueIdentifier>{1d38ec5f-5bed-4f52-b13d-140e0c0351af}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\ALPC-RPC">
+      <UniqueIdentifier>{d7397dc8-b402-47f1-804e-3d0e2e4cfcb6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Interfaces">
+      <UniqueIdentifier>{807c5758-264f-47f7-bfac-4dca99859301}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Source.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="precomp.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="AlpcPort.cpp">
+      <Filter>Source Files\ALPC-RPC</Filter>
+    </ClCompile>
+    <ClCompile Include="RpcAlpcClient.cpp">
+      <Filter>Source Files\ALPC-RPC</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="precomp.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="DceNdrStream.hpp">
+      <Filter>Header Files\Dce-Ndr</Filter>
+    </ClInclude>
+    <ClInclude Include="DceNdr.hpp">
+      <Filter>Header Files\Dce-Ndr</Filter>
+    </ClInclude>
+    <ClInclude Include="NtAlpcApi.hpp">
+      <Filter>Header Files\ALPC-RPC</Filter>
+    </ClInclude>
+    <ClInclude Include="AlpcPort.hpp">
+      <Filter>Header Files\ALPC-RPC</Filter>
+    </ClInclude>
+    <ClInclude Include="RpcAlpcClient.hpp">
+      <Filter>Header Files\ALPC-RPC</Filter>
+    </ClInclude>
+    <ClInclude Include="ITaskSchedulerInterface.hpp">
+      <Filter>Header Files\Interfaces</Filter>
+    </ClInclude>
+    <ClInclude Include="IEventServiceInterface.hpp">
+      <Filter>Header Files\Interfaces</Filter>
+    </ClInclude>
+    <ClInclude Include="LocalFWInterface.hpp">
+      <Filter>Header Files\Interfaces</Filter>
+    </ClInclude>
+    <ClInclude Include="SvcctlInterface.hpp">
+      <Filter>Header Files\Interfaces</Filter>
+    </ClInclude>
+    <ClInclude Include="SamrInterface.hpp">
+      <Filter>Header Files\Interfaces</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>

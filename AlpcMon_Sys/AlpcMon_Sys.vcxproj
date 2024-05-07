@@ -1,0 +1,403 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{D8E012B7-6099-4A25-B7EA-08F201A16E0C}</ProjectGuid>
+    <TemplateGuid>{dd38f7fc-d7bd-488b-9242-7d8754cde80d}</TemplateGuid>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <MinimumVisualStudioVersion>12.0</MinimumVisualStudioVersion>
+    <Configuration>Debug</Configuration>
+    <Platform Condition="'$(Platform)' == ''">Win32</Platform>
+    <RootNamespace>AlpcMon_Sys</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0.19041.0</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <TargetVersion>Windows7</TargetVersion>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>WindowsKernelModeDriver10.0</PlatformToolset>
+    <ConfigurationType>Driver</ConfigurationType>
+    <DriverType>WDM</DriverType>
+    <DriverTargetPlatform>Desktop</DriverTargetPlatform>
+    <_NT_TARGET_VERSION>0x0601</_NT_TARGET_VERSION>
+    <Driver_SpectreMitigation>Spectre</Driver_SpectreMitigation>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <TargetVersion>Windows7</TargetVersion>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>WindowsKernelModeDriver10.0</PlatformToolset>
+    <ConfigurationType>Driver</ConfigurationType>
+    <DriverType>WDM</DriverType>
+    <DriverTargetPlatform>Desktop</DriverTargetPlatform>
+    <_NT_TARGET_VERSION>0x0601</_NT_TARGET_VERSION>
+    <Driver_SpectreMitigation>Spectre</Driver_SpectreMitigation>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <TargetVersion>Windows7</TargetVersion>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>WindowsKernelModeDriver10.0</PlatformToolset>
+    <ConfigurationType>Driver</ConfigurationType>
+    <DriverType>WDM</DriverType>
+    <DriverTargetPlatform>Desktop</DriverTargetPlatform>
+    <_NT_TARGET_VERSION>0x0601</_NT_TARGET_VERSION>
+    <Driver_SpectreMitigation>Spectre</Driver_SpectreMitigation>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <TargetVersion>Windows7</TargetVersion>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>WindowsKernelModeDriver10.0</PlatformToolset>
+    <ConfigurationType>Driver</ConfigurationType>
+    <DriverType>WDM</DriverType>
+    <DriverTargetPlatform>Desktop</DriverTargetPlatform>
+    <_NT_TARGET_VERSION>0x0601</_NT_TARGET_VERSION>
+    <Driver_SpectreMitigation>Spectre</Driver_SpectreMitigation>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <DebuggerFlavor>DbgengKernelDebugger</DebuggerFlavor>
+    <RunCodeAnalysis>true</RunCodeAnalysis>
+    <EnableInf2cat>false</EnableInf2cat>
+    <OutDir>$(SolutionDir)\out\$(Platform)\$(Configuration)\$(ProjectName)\</OutDir>
+    <IntDir>$(SolutionDir)\out\int\$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
+    <LinkIncremental>false</LinkIncremental>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <DebuggerFlavor>DbgengKernelDebugger</DebuggerFlavor>
+    <RunCodeAnalysis>true</RunCodeAnalysis>
+    <EnableInf2cat>false</EnableInf2cat>
+    <OutDir>$(SolutionDir)\out\$(Platform)\$(Configuration)\$(ProjectName)\</OutDir>
+    <IntDir>$(SolutionDir)\out\int\$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
+    <LinkIncremental>false</LinkIncremental>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <DebuggerFlavor>DbgengKernelDebugger</DebuggerFlavor>
+    <RunCodeAnalysis>true</RunCodeAnalysis>
+    <EnableInf2cat>false</EnableInf2cat>
+    <OutDir>$(SolutionDir)\out\$(Platform)\$(Configuration)\$(ProjectName)\</OutDir>
+    <IntDir>$(SolutionDir)\out\int\$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
+    <LinkIncremental>false</LinkIncremental>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <DebuggerFlavor>DbgengKernelDebugger</DebuggerFlavor>
+    <RunCodeAnalysis>true</RunCodeAnalysis>
+    <EnableInf2cat>false</EnableInf2cat>
+    <OutDir>$(SolutionDir)\out\$(Platform)\$(Configuration)\$(ProjectName)\</OutDir>
+    <IntDir>$(SolutionDir)\out\int\$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
+    <LinkIncremental>false</LinkIncremental>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <LanguageStandard>stdcpplatest</LanguageStandard>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <LanguageStandard_C>stdc17</LanguageStandard_C>
+      <PreprocessorDefinitions>TMH_FILE=%(FileName)%(Extension).tmh;POOL_NX_OPTIN;POOL_ZERO_DOWN_LEVEL_SUPPORT;_X86_=1;i386=1;STD_CALL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <SDLCheck>true</SDLCheck>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <AdditionalIncludeDirectories>$(SolutionDir)\submodules\XPlatform-MiniLib;$(SolutionDir)\AlpcMon_Dll;$(SolutionDir)\Alpc-Demo;$(IntDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>precomp.hpp</PrecompiledHeaderFile>
+      <DisableSpecificWarnings>5040;4651;4748;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+      <UseFullPaths>true</UseFullPaths>
+      <WppEnabled>true</WppEnabled>
+      <WppFileExtensions>.c.cpp.h.hpp</WppFileExtensions>
+      <WppPreserveExtensions>.c.cpp.h.hpp</WppPreserveExtensions>
+      <WppTraceFunction>
+      </WppTraceFunction>
+      <WppMinimalRebuildFromTracking>false</WppMinimalRebuildFromTracking>
+      <WppScanConfigurationData>$(ProjectDir)\trace.hpp</WppScanConfigurationData>
+      <WppAdditionalOptions>$(ProjectDir)\*.h $(ProjectDir)\*.hpp %(WppAdditionalOptions)</WppAdditionalOptions>
+      <CompileAs>CompileAsCpp</CompileAs>
+      <ExceptionHandling>false</ExceptionHandling>
+      <IntrinsicFunctions>false</IntrinsicFunctions>
+      <StructMemberAlignment>Default</StructMemberAlignment>
+      <CallingConvention>StdCall</CallingConvention>
+      <FavorSizeOrSpeed>Size</FavorSizeOrSpeed>
+      <IntelJCCErratum>true</IntelJCCErratum>
+      <EnforceTypeConversionRules>true</EnforceTypeConversionRules>
+      <AdditionalOptions>/kernel /INTEGRITYCHECK /d1nodatetime %(AdditionalOptions)</AdditionalOptions>
+    </ClCompile>
+    <PostBuildEvent>
+      <Command>
+      </Command>
+    </PostBuildEvent>
+    <Link>
+      <CETCompat>true</CETCompat>
+      <DataExecutionPrevention>true</DataExecutionPrevention>
+      <AdditionalDependencies>XPF-Lib_Sys.lib;netio.lib;fltmgr.lib;%(AdditionalDependencies);$(KernelBufferOverflowLib);$(DDK_LIB_PATH)ntoskrnl.lib;$(DDK_LIB_PATH)hal.lib;$(DDK_LIB_PATH)wmilib.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)\out\$(Platform)\$(Configuration)\XPF-Lib_Sys\</AdditionalLibraryDirectories>
+      <AdditionalOptions>/INTEGRITYCHECK /BREPRO /FILEALIGN:0x1000 %(AdditionalOptions)</AdditionalOptions>
+      <LinkTimeCodeGeneration>
+      </LinkTimeCodeGeneration>
+      <RandomizedBaseAddress>true</RandomizedBaseAddress>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+    </Link>
+    <DriverSign>
+      <FileDigestAlgorithm>SHA256</FileDigestAlgorithm>
+    </DriverSign>
+    <Ctrpp>
+      <BackwardCompatibility>true</BackwardCompatibility>
+    </Ctrpp>
+    <PreBuildEvent>
+      <Command>py -3 $(SolutionDir)/submodules/cpplint/cpplint.py --output=vs7 --linelength=130 --counting=detailed --filter=-whitespace/indent_namespace,-whitespace/newline,-build/include_subdir,-build/include_what_you_use,-build/c++11,-legal/copyright,-whitespace/braces,-whitespace/parens,-runtime/references --recursive $(ProjectDir)</Command>
+    </PreBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <LanguageStandard>stdcpplatest</LanguageStandard>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <LanguageStandard_C>stdc17</LanguageStandard_C>
+      <PreprocessorDefinitions>TMH_FILE=%(FileName)%(Extension).tmh;POOL_NX_OPTIN;POOL_ZERO_DOWN_LEVEL_SUPPORT;_X86_=1;i386=1;STD_CALL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <SDLCheck>true</SDLCheck>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <AdditionalIncludeDirectories>$(SolutionDir)\submodules\XPlatform-MiniLib;$(SolutionDir)\AlpcMon_Dll;$(SolutionDir)\Alpc-Demo;$(IntDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>precomp.hpp</PrecompiledHeaderFile>
+      <DisableSpecificWarnings>5040;4651;4603;4627;4986;4987;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+      <UseFullPaths>true</UseFullPaths>
+      <WppEnabled>true</WppEnabled>
+      <WppFileExtensions>.c.cpp.h.hpp</WppFileExtensions>
+      <WppPreserveExtensions>.c.cpp.h.hpp</WppPreserveExtensions>
+      <WppTraceFunction>
+      </WppTraceFunction>
+      <WppMinimalRebuildFromTracking>false</WppMinimalRebuildFromTracking>
+      <WppScanConfigurationData>$(ProjectDir)\trace.hpp</WppScanConfigurationData>
+      <WppAdditionalOptions>$(ProjectDir)\*.h $(ProjectDir)\*.hpp %(WppAdditionalOptions)</WppAdditionalOptions>
+      <CompileAs>CompileAsCpp</CompileAs>
+      <ExceptionHandling>false</ExceptionHandling>
+      <StructMemberAlignment>Default</StructMemberAlignment>
+      <CallingConvention>StdCall</CallingConvention>
+      <IntrinsicFunctions>false</IntrinsicFunctions>
+      <IntelJCCErratum>true</IntelJCCErratum>
+      <EnforceTypeConversionRules>true</EnforceTypeConversionRules>
+      <AdditionalOptions>/kernel /INTEGRITYCHECK /d1nodatetime %(AdditionalOptions)</AdditionalOptions>
+    </ClCompile>
+    <PostBuildEvent>
+      <Command>
+      </Command>
+    </PostBuildEvent>
+    <Link>
+      <CETCompat>true</CETCompat>
+      <DataExecutionPrevention>true</DataExecutionPrevention>
+      <AdditionalDependencies>XPF-Lib_Sys.lib;netio.lib;fltmgr.lib;%(AdditionalDependencies);$(KernelBufferOverflowLib);$(DDK_LIB_PATH)ntoskrnl.lib;$(DDK_LIB_PATH)hal.lib;$(DDK_LIB_PATH)wmilib.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)\out\$(Platform)\$(Configuration)\XPF-Lib_Sys\</AdditionalLibraryDirectories>
+      <AdditionalOptions>/INTEGRITYCHECK /BREPRO /FILEALIGN:0x1000 %(AdditionalOptions)</AdditionalOptions>
+      <LinkTimeCodeGeneration>
+      </LinkTimeCodeGeneration>
+      <RandomizedBaseAddress>true</RandomizedBaseAddress>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+    </Link>
+    <DriverSign>
+      <FileDigestAlgorithm>SHA256</FileDigestAlgorithm>
+    </DriverSign>
+    <Ctrpp>
+      <BackwardCompatibility>true</BackwardCompatibility>
+    </Ctrpp>
+    <PreBuildEvent>
+      <Command>py -3 $(SolutionDir)/submodules/cpplint/cpplint.py --output=vs7 --linelength=130 --counting=detailed --filter=-whitespace/indent_namespace,-whitespace/newline,-build/include_subdir,-build/include_what_you_use,-build/c++11,-legal/copyright,-whitespace/braces,-whitespace/parens,-runtime/references --recursive $(ProjectDir)</Command>
+    </PreBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <LanguageStandard>stdcpplatest</LanguageStandard>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <LanguageStandard_C>stdc17</LanguageStandard_C>
+      <PreprocessorDefinitions>TMH_FILE=%(FileName)%(Extension).tmh;POOL_NX_OPTIN;POOL_ZERO_DOWN_LEVEL_SUPPORT;_WIN64;_AMD64_;AMD64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <SDLCheck>true</SDLCheck>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <AdditionalIncludeDirectories>$(SolutionDir)\submodules\XPlatform-MiniLib;$(SolutionDir)\AlpcMon_Dll;$(SolutionDir)\Alpc-Demo;$(IntDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>precomp.hpp</PrecompiledHeaderFile>
+      <DisableSpecificWarnings>5040;4651;4748;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+      <UseFullPaths>true</UseFullPaths>
+      <WppEnabled>true</WppEnabled>
+      <WppFileExtensions>.c.cpp.h.hpp</WppFileExtensions>
+      <WppPreserveExtensions>.c.cpp.h.hpp</WppPreserveExtensions>
+      <WppTraceFunction>
+      </WppTraceFunction>
+      <WppMinimalRebuildFromTracking>false</WppMinimalRebuildFromTracking>
+      <WppScanConfigurationData>$(ProjectDir)\trace.hpp</WppScanConfigurationData>
+      <WppAdditionalOptions>$(ProjectDir)\*.h $(ProjectDir)\*.hpp %(WppAdditionalOptions)</WppAdditionalOptions>
+      <CompileAs>CompileAsCpp</CompileAs>
+      <GuardEHContMetadata>true</GuardEHContMetadata>
+      <ExceptionHandling>false</ExceptionHandling>
+      <IntrinsicFunctions>false</IntrinsicFunctions>
+      <StructMemberAlignment>Default</StructMemberAlignment>
+      <CallingConvention>StdCall</CallingConvention>
+      <FavorSizeOrSpeed>Size</FavorSizeOrSpeed>
+      <IntelJCCErratum>true</IntelJCCErratum>
+      <EnforceTypeConversionRules>true</EnforceTypeConversionRules>
+      <AdditionalOptions>/kernel /INTEGRITYCHECK /d1nodatetime /d2guardretpoline %(AdditionalOptions)</AdditionalOptions>
+    </ClCompile>
+    <PostBuildEvent>
+      <Command>
+      </Command>
+    </PostBuildEvent>
+    <Link>
+      <CETCompat>true</CETCompat>
+      <DataExecutionPrevention>true</DataExecutionPrevention>
+      <AdditionalDependencies>XPF-Lib_Sys.lib;netio.lib;fltmgr.lib;%(AdditionalDependencies);$(KernelBufferOverflowLib);$(DDK_LIB_PATH)ntoskrnl.lib;$(DDK_LIB_PATH)hal.lib;$(DDK_LIB_PATH)wmilib.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)\out\$(Platform)\$(Configuration)\XPF-Lib_Sys\</AdditionalLibraryDirectories>
+      <AdditionalOptions>/INTEGRITYCHECK /BREPRO /FILEALIGN:0x1000 /guard:retpoline %(AdditionalOptions)</AdditionalOptions>
+      <LinkTimeCodeGeneration>
+      </LinkTimeCodeGeneration>
+      <RandomizedBaseAddress>true</RandomizedBaseAddress>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+    </Link>
+    <DriverSign>
+      <FileDigestAlgorithm>SHA256</FileDigestAlgorithm>
+    </DriverSign>
+    <Ctrpp>
+      <BackwardCompatibility>true</BackwardCompatibility>
+    </Ctrpp>
+    <PreBuildEvent>
+      <Command>py -3 $(SolutionDir)/submodules/cpplint/cpplint.py --output=vs7 --linelength=130 --counting=detailed --filter=-whitespace/indent_namespace,-whitespace/newline,-build/include_subdir,-build/include_what_you_use,-build/c++11,-legal/copyright,-whitespace/braces,-whitespace/parens,-runtime/references --recursive $(ProjectDir)</Command>
+    </PreBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <LanguageStandard>stdcpplatest</LanguageStandard>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <LanguageStandard_C>stdc17</LanguageStandard_C>
+      <PreprocessorDefinitions>TMH_FILE=%(FileName)%(Extension).tmh;POOL_NX_OPTIN;POOL_ZERO_DOWN_LEVEL_SUPPORT;_WIN64;_AMD64_;AMD64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <SDLCheck>true</SDLCheck>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <AdditionalIncludeDirectories>$(SolutionDir)\submodules\XPlatform-MiniLib;$(SolutionDir)\AlpcMon_Dll;$(SolutionDir)\Alpc-Demo;$(IntDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>precomp.hpp</PrecompiledHeaderFile>
+      <DisableSpecificWarnings>5040;4651;4603;4627;4986;4987;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+      <UseFullPaths>true</UseFullPaths>
+      <WppEnabled>true</WppEnabled>
+      <WppFileExtensions>.c.cpp.h.hpp</WppFileExtensions>
+      <WppPreserveExtensions>.c.cpp.h.hpp</WppPreserveExtensions>
+      <WppTraceFunction>
+      </WppTraceFunction>
+      <WppMinimalRebuildFromTracking>false</WppMinimalRebuildFromTracking>
+      <WppScanConfigurationData>$(ProjectDir)\trace.hpp</WppScanConfigurationData>
+      <WppAdditionalOptions>$(ProjectDir)\*.h $(ProjectDir)\*.hpp %(WppAdditionalOptions)</WppAdditionalOptions>
+      <CompileAs>CompileAsCpp</CompileAs>
+      <GuardEHContMetadata>true</GuardEHContMetadata>
+      <ExceptionHandling>false</ExceptionHandling>
+      <StructMemberAlignment>Default</StructMemberAlignment>
+      <CallingConvention>StdCall</CallingConvention>
+      <IntrinsicFunctions>false</IntrinsicFunctions>
+      <IntelJCCErratum>true</IntelJCCErratum>
+      <EnforceTypeConversionRules>true</EnforceTypeConversionRules>
+      <AdditionalOptions>/kernel /INTEGRITYCHECK /d1nodatetime /d2guardretpoline %(AdditionalOptions)</AdditionalOptions>
+    </ClCompile>
+    <PostBuildEvent>
+      <Command>
+      </Command>
+    </PostBuildEvent>
+    <Link>
+      <CETCompat>true</CETCompat>
+      <DataExecutionPrevention>true</DataExecutionPrevention>
+      <AdditionalDependencies>XPF-Lib_Sys.lib;netio.lib;fltmgr.lib;%(AdditionalDependencies);$(KernelBufferOverflowLib);$(DDK_LIB_PATH)ntoskrnl.lib;$(DDK_LIB_PATH)hal.lib;$(DDK_LIB_PATH)wmilib.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)\out\$(Platform)\$(Configuration)\XPF-Lib_Sys\</AdditionalLibraryDirectories>
+      <AdditionalOptions>/INTEGRITYCHECK /BREPRO /FILEALIGN:0x1000 /guard:retpoline %(AdditionalOptions)</AdditionalOptions>
+      <LinkTimeCodeGeneration>
+      </LinkTimeCodeGeneration>
+      <RandomizedBaseAddress>true</RandomizedBaseAddress>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+    </Link>
+    <DriverSign>
+      <FileDigestAlgorithm>SHA256</FileDigestAlgorithm>
+    </DriverSign>
+    <Ctrpp>
+      <BackwardCompatibility>true</BackwardCompatibility>
+    </Ctrpp>
+    <PreBuildEvent>
+      <Command>py -3 $(SolutionDir)/submodules/cpplint/cpplint.py --output=vs7 --linelength=130 --counting=detailed --filter=-whitespace/indent_namespace,-whitespace/newline,-build/include_subdir,-build/include_what_you_use,-build/c++11,-legal/copyright,-whitespace/braces,-whitespace/parens,-runtime/references --recursive $(ProjectDir)</Command>
+    </PreBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <FilesToPackage Include="$(TargetPath)" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="CppSupport.cpp" />
+    <ClCompile Include="Events.cpp" />
+    <ClCompile Include="FirmwareTableHandlerFilter.cpp" />
+    <ClCompile Include="globals.cpp" />
+    <ClCompile Include="ImageFilter.cpp" />
+    <ClCompile Include="KmHelper.cpp" />
+    <ClCompile Include="main.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Use</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Use</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Use</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Use</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="PluginManager.cpp" />
+    <ClCompile Include="precomp.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="ProcessFilter.cpp" />
+    <ClCompile Include="RegistryUtils.cpp" />
+    <ClCompile Include="RpcAlpcInspectionPlugin.cpp" />
+    <ClCompile Include="RpcEngine.cpp" />
+    <ClCompile Include="ThreadFilter.cpp" />
+    <ClCompile Include="UmHookPlugin.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\XPF-Lib_Sys\XPF-Lib_sys.vcxproj">
+      <Project>{c85a3c29-06e6-4cbb-a2f4-e39b7ecb66e3}</Project>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="CppSupport.hpp" />
+    <ClInclude Include="Events.hpp" />
+    <ClInclude Include="FirmwareTableHandlerFilter.hpp" />
+    <ClInclude Include="globals.hpp" />
+    <ClInclude Include="ImageFilter.hpp" />
+    <ClInclude Include="KmHelper.hpp" />
+    <ClInclude Include="PluginManager.hpp" />
+    <ClInclude Include="precomp.hpp" />
+    <ClInclude Include="ProcessFilter.hpp" />
+    <ClInclude Include="RegistryUtils.hpp" />
+    <ClInclude Include="RpcAlpcInspectionPlugin.hpp" />
+    <ClInclude Include="RpcEngine.hpp" />
+    <ClInclude Include="ThreadFilter.hpp" />
+    <ClInclude Include="trace.hpp" />
+    <ClInclude Include="UmHookPlugin.hpp" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>
