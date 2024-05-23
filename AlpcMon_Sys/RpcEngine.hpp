@@ -32,6 +32,7 @@ namespace RpcEngine
  * @param[in]   Interface       - The interface in which the call happens.
  * @param[in]   ProcedureNumber - The procedure that is called from the given interface.
  * @param[in]   TransferSyntax  - Transfer syntax used - one of the LRPC_TRANSFER_SYNTAX* flags.
+ * @param[in]   PortHandle      - Associated with the message.
  *
  * @return      This function does not return anything. It handles all cases internally and takes
  *              any required actions.
@@ -45,7 +46,8 @@ Analyze(
     _In_ size_t BufferSize,
     _In_ const uuid_t& Interface,
     _In_ const uint64_t ProcedureNumber,
-    _In_ const uint64_t& TransferSyntax
+    _In_ const uint64_t& TransferSyntax,
+    _In_ const uint64_t& PortHandle
 ) noexcept(true);
 };  // namespace RpcEngine
 };  // namespace SysMon

@@ -42,6 +42,131 @@ XPF_SECTION_PAGED;
 //
 // -------------------------------------------------------------------------------------------------------------------
 // | ****************************************************************************************************************|
+// |                              Helper to dump generic message                                                     |
+// | ****************************************************************************************************************|
+// -------------------------------------------------------------------------------------------------------------------
+//
+static void XPF_API
+RpcEngineDumpMessage(
+    _In_ uint32_t ProcessPid,
+    _In_ const uuid_t& Interface,
+    _Inout_ AlpcRpc::DceNdr::DceMarshallBuffer& MarshallBuffer,
+    _In_ const uint64_t& ProcedureNumber,
+    _In_ const uint64_t& PortHandle
+) noexcept(true)
+{
+    XPF_MAX_APC_LEVEL();
+
+    xpf::String<wchar_t> buffer;
+    NTSTATUS status = STATUS_UNSUCCESSFUL;
+
+    WCHAR ustrBuff[256] = { 0 };
+    UNICODE_STRING strBuff = { 0 };
+
+    /* Header message. */
+    ::RtlInitEmptyUnicodeString(&strBuff, ustrBuff, sizeof(ustrBuff));
+    status = ::RtlUnicodeStringPrintf(&strBuff,
+                                      L"{%08lX-%04hX-%04hX-%02hhX%02hhX-%02hhX%02hhX%02hhX%02hhX%02hhX%02hhX} "
+                                      L"Process with pid %d (0x%x) - port handle %I64d - procedure number %I64d: \r\n",
+                                      Interface.Data1,    Interface.Data2,    Interface.Data3,
+                                      Interface.Data4[0], Interface.Data4[1], Interface.Data4[2], Interface.Data4[3],
+                                      Interface.Data4[4], Interface.Data4[5], Interface.Data4[6], Interface.Data4[7],
+                                      ProcessPid,
+                                      ProcessPid,
+                                      PortHandle,
+                                      ProcedureNumber);
+    if (!NT_SUCCESS(status))
+    {
+        return;
+    }
+    status = buffer.Append(strBuff.Buffer);
+    if (!NT_SUCCESS(status))
+    {
+        return;
+    }
+
+
+    /* Dump every 16 bytes*/
+    const unsigned char* marshallBuffer = static_cast<const unsigned char*>(MarshallBuffer.Buffer().GetBuffer());
+    for (size_t i = 0; i < MarshallBuffer.Buffer().GetSize(); i += 16)
+    {
+        /* First as bytes. */
+        for (size_t j = 0; j < 16; ++j)
+        {
+            uint16_t value = (i + j < MarshallBuffer.Buffer().GetSize()) ? static_cast<uint16_t>(marshallBuffer[i + j])
+                                                                         : 0;
+            ::RtlInitEmptyUnicodeString(&strBuff, ustrBuff, sizeof(ustrBuff));
+            status = ::RtlUnicodeStringPrintf(&strBuff,
+                                              L"0x%02X ",
+                                              value);
+            if (!NT_SUCCESS(status))
+            {
+                return;
+            }
+            status = buffer.Append(strBuff.Buffer);
+            if (!NT_SUCCESS(status))
+            {
+                return;
+            }
+        }
+
+        /* Then a separator. */
+        ::RtlInitEmptyUnicodeString(&strBuff, ustrBuff, sizeof(ustrBuff));
+        status = ::RtlUnicodeStringPrintf(&strBuff,
+                                          L"    |    ");
+        if (!NT_SUCCESS(status))
+        {
+            return;
+        }
+        status = buffer.Append(strBuff.Buffer);
+        if (!NT_SUCCESS(status))
+        {
+            return;
+        }
+
+        /* Then as characters */
+        for (size_t j = 0; j < 16; ++j)
+        {
+            char toPrint = (i + j < MarshallBuffer.Buffer().GetSize()) ? marshallBuffer[i + j]
+                                                                       : '.';
+            toPrint = isprint(toPrint) ? toPrint
+                                       : '.';
+            ::RtlInitEmptyUnicodeString(&strBuff, ustrBuff, sizeof(ustrBuff));
+            status = ::RtlUnicodeStringPrintf(&strBuff,
+                                              L"%c",
+                                              toPrint);
+            if (!NT_SUCCESS(status))
+            {
+                return;
+            }
+            status = buffer.Append(strBuff.Buffer);
+            if (!NT_SUCCESS(status))
+            {
+                return;
+            }
+        }
+
+        /* Then a new line. */
+        ::RtlInitEmptyUnicodeString(&strBuff, ustrBuff, sizeof(ustrBuff));
+        status = ::RtlUnicodeStringPrintf(&strBuff,
+                                          L"\r\n");
+        if (!NT_SUCCESS(status))
+        {
+            return;
+        }
+        status = buffer.Append(strBuff.Buffer);
+        if (!NT_SUCCESS(status))
+        {
+            return;
+        }
+    }
+
+    SysMonLogInfo("%S", &buffer[0]);
+}
+
+//
+// -------------------------------------------------------------------------------------------------------------------
+// | ****************************************************************************************************************|
 // |                              Helper to analyze samr interface                                                   |
 // | ****************************************************************************************************************|
 // -------------------------------------------------------------------------------------------------------------------
@@ -371,7 +496,8 @@ SysMon::RpcEngine::Analyze(
     _In_ size_t BufferSize,
     _In_ const uuid_t& Interface,
     _In_ const uint64_t ProcedureNumber,
-    _In_ const uint64_t& TransferSyntax
+    _In_ const uint64_t& TransferSyntax,
+    _In_ const uint64_t& PortHandle
 ) noexcept(true)
 {
     XPF_MAX_APC_LEVEL();
@@ -400,6 +526,14 @@ SysMon::RpcEngine::Analyze(
     AlpcRpc::DceNdr::DceMarshallBuffer marshallBuffer{ static_cast<uint32_t>(TransferSyntax) };
     marshallBuffer.MarshallRawBuffer(rawBuffer);
 
+    /* Dump the message for logging. */
+    RpcEngineDumpMessage(processId,
+                         Interface,
+                         marshallBuffer,
+                         ProcedureNumber,
+                         PortHandle);
+
+    /* Then move with specific analysis. */
     if (Interface == gSamrInterface.SyntaxGUID)
     {
         RpcEngineAnalyzeSamrMessage(processId,

@@ -122,6 +122,11 @@ typedef struct _UM_KM_ALPC_PORT_CONNECTED
      *          connected to. This is capped to 512 characters.
      */
     wchar_t     PortName[512];
+
+    /**
+     * @brief   The handle of the port associated with this name.
+     */
+    uint64_t    PortHandle;
 } UM_KM_ALPC_PORT_CONNECTED;
 
 /**
@@ -158,6 +163,11 @@ typedef struct _UM_KM_INTERESTING_RPC_MESSAGE
      * @brief   The transfer syntax flag. One of the LRPC_TRANSFER_SYNTAX_* values.
      */
     uint64_t    TransferSyntaxFlag;
+
+    /**
+     * @brief   The handle of the port associated with this message.
+     */
+    uint64_t    PortHandle;
 
     /**
      * @brief   The buffer containing the request.

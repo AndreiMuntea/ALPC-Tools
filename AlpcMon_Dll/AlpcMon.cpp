@@ -26,6 +26,8 @@
 // -------------------------------------------------------------------------------------------------------------------
 //
 
+static constexpr const bool gMonitorAllInterfaces = true;
+
 static constexpr const uuid_t gInterestingInterfaces[] =
 {
     /* SamrInterface            -  {12345778-1234-ABCD-EF00-0123456789AC} */
@@ -147,6 +149,12 @@ AlpcMessageIsInterfaceInteresting(
     _In_ const uuid_t& Interface
 ) noexcept(true)
 {
+    /* If we want to monitor all traffic this always returns true. */
+    if (gMonitorAllInterfaces)
+    {
+        return true;
+    }
+
     /* Monitor only a specific range of interfaces. */
     for (size_t i = 0; i < XPF_ARRAYSIZE(gInterestingInterfaces); ++i)
     {
@@ -190,7 +198,7 @@ AlpcMessageHandleRequest(
 
         /* Grab the data buffer. */
         buffer = xpf::AlgoAddToPointer(Message,
-                                       Message->u1.s1.TotalLength - Message->u1.s1.DataLength);
+                                       size_t{Message->u1.s1.TotalLength} - size_t{Message->u1.s1.DataLength});
         /* Now check the message type. */
         messageType = *(static_cast<uint64_t*>(buffer));
 
@@ -234,6 +242,7 @@ AlpcMessageHandleRequest(
             {
                 __leave;
             }
+            message.PortHandle = portHandle;
 
             /* Invalid size for this message. We cap this so we can capture the buffer. */
             if (Message->u1.s1.DataLength < sizeof(LRPC_REQUEST_MESSAGE))
@@ -334,6 +343,7 @@ NtAlpcConnectPortHook(
         xpf::ApiCopyMemory(&message.PortName[0],
                            PortName->Buffer,
                            PortName->Length);
+        message.PortHandle = HandleToULong(*PortHandle);
 
         /* Notify the kernel. Ignore the response - discard the fail.*/
         status = HookEngineNotifyKernel(&message.Header);

@@ -160,9 +160,10 @@ SysMon::RpcAlpcInspectionPlugin::OnUmHookEvent(
     if (messageType == UM_KM_MESSAGE_TYPE_ALPC_PORT_CONNECTED)
     {
         UM_KM_ALPC_PORT_CONNECTED* portConnectedMessage = reinterpret_cast<UM_KM_ALPC_PORT_CONNECTED*>(messageHeader);
-        SysMonLogInfo("Process with pid %d connected to port %S",
+        SysMonLogInfo("Process with pid %d connected to port %S on handle %I64d",
                        processId,
-                       portConnectedMessage->PortName);
+                       portConnectedMessage->PortName,
+                       portConnectedMessage->PortHandle);
     }
     else if (messageType == UM_KM_MESSAGE_TYPE_INTERESTING_RPC_MESSAGE)
     {
@@ -171,6 +172,7 @@ SysMon::RpcAlpcInspectionPlugin::OnUmHookEvent(
                                    sizeof(rpcInterestingMessage->Buffer),
                                    rpcInterestingMessage->InterfaceGuid,
                                    rpcInterestingMessage->ProcedureNumber,
-                                   rpcInterestingMessage->TransferSyntaxFlag);
+                                   rpcInterestingMessage->TransferSyntaxFlag,
+                                   rpcInterestingMessage->PortHandle);
     }
 }
