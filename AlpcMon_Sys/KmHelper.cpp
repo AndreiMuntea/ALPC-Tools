@@ -449,6 +449,56 @@ KmHelper::HelperFindExport(
 //
 // -------------------------------------------------------------------------------------------------------------------
 // | ****************************************************************************************************************|
+// |                                       Helper to hash an unicode string.                                         |
+// | ****************************************************************************************************************|
+// -------------------------------------------------------------------------------------------------------------------
+//
+
+_IRQL_requires_max_(PASSIVE_LEVEL)
+NTSTATUS XPF_API
+KmHelper::HelperHashUnicodeString(
+    _In_ _Const_ const xpf::StringView<wchar_t>& String,
+    _Out_ uint32_t* Hash
+) noexcept(true)
+{
+    /* RtlHashUnicodeString can be called at max passive level see annotation. */
+    XPF_MAX_PASSIVE_LEVEL();
+
+    XPF_DEATH_ON_FAILURE(nullptr != Hash);
+
+    NTSTATUS status = STATUS_UNSUCCESSFUL;
+    UNICODE_STRING ustr = { 0 };
+
+    /* Preinit output. */
+    *Hash = 0;
+
+    /* Get the view in ustr format. */
+    status = KmHelper::HelperViewToUnicodeString(String,
+                                                 ustr);
+    if (!NT_SUCCESS(status))
+    {
+        return status;
+    }
+
+    /* Do hashing. */
+    status = ::RtlHashUnicodeString(&ustr,
+                                    TRUE,
+                                    HASH_STRING_ALGORITHM_DEFAULT,
+                                    reinterpret_cast<PULONG>(Hash));
+    if (!NT_SUCCESS(status))
+    {
+        *Hash = 0;
+        return status;
+    }
+
+    /* All good. */
+    return STATUS_SUCCESS;
+}
+
+
+//
+// -------------------------------------------------------------------------------------------------------------------
+// | ****************************************************************************************************************|
 // |                                       Helper to write a buffer safe                                             |
 // | ****************************************************************************************************************|
 // -------------------------------------------------------------------------------------------------------------------

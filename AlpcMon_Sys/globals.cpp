@@ -17,6 +17,7 @@
 #include "PluginManager.hpp"
 #include "KmHelper.hpp"
 #include "RegistryUtils.hpp"
+#include "WorkQueue.hpp"
 
 #include "globals.hpp"
 #include "trace.hpp"
@@ -55,6 +56,10 @@ struct GlobalData
      * @brief   Used to throw events.
      */
     xpf::EventBus EventBus;
+    /**
+     * @brief   Global work queue.
+     */
+    KmHelper::WorkQueue WorkQueue;
     /**
      * @brief   Keeps track of all plugins. 
      */
@@ -105,6 +110,26 @@ GlobalDataGetBusInstance(
     XPF_MAX_DISPATCH_LEVEL();
 
     return xpf::AddressOf(gGlobalData->EventBus);
+}
+
+
+//
+// -------------------------------------------------------------------------------------------------------------------
+// | ****************************************************************************************************************|
+// |                                       GlobalDataGetWorkQueueInstance                                            |
+// | ****************************************************************************************************************|
+// -------------------------------------------------------------------------------------------------------------------
+//
+
+_Use_decl_annotations_
+KmHelper::WorkQueue* XPF_API
+GlobalDataGetWorkQueueInstance(
+    void
+) noexcept(true)
+{
+    XPF_MAX_DISPATCH_LEVEL();
+
+    return xpf::AddressOf(gGlobalData->WorkQueue);
 }
 
 //

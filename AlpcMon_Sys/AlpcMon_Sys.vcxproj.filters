@@ -47,6 +47,12 @@
     <Filter Include="Source Files\RPC-Engine">
       <UniqueIdentifier>{44854545-aa38-44bb-81fd-dec78f4119bc}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\Collectors">
+      <UniqueIdentifier>{670e0ad0-7913-4bc2-8f0e-6dcc971bca93}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Collectors">
+      <UniqueIdentifier>{2ba609a2-08ea-41d9-a68c-bcb2e75bfc84}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -94,6 +100,15 @@
     <ClCompile Include="RpcEngine.cpp">
       <Filter>Source Files\RPC-Engine</Filter>
     </ClCompile>
+    <ClCompile Include="HashUtils.cpp">
+      <Filter>Source Files\Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="WorkQueue.cpp">
+      <Filter>Source Files\Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="ModuleCollector.cpp">
+      <Filter>Source Files\Collectors</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="trace.hpp">
@@ -140,6 +155,15 @@
     </ClInclude>
     <ClInclude Include="RpcEngine.hpp">
       <Filter>Header Files\RPC-Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="HashUtils.hpp">
+      <Filter>Header Files\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="ModuleCollector.hpp">
+      <Filter>Header Files\Collectors</Filter>
+    </ClInclude>
+    <ClInclude Include="WorkQueue.hpp">
+      <Filter>Header Files\Utils</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

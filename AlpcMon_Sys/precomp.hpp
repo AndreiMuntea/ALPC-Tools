@@ -16,3 +16,4 @@
 
 #include <xpf_lib/xpf.hpp>      // NOLINT(*)
 #include <ntimage.h>            // NOLINT(*)
+#include <bcrypt.h>             // NOLINT(*)

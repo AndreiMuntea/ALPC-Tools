@@ -108,6 +108,25 @@ HelperIsUserAddress(
 ) noexcept(true);
 
 /**
+ * @brief           Hashes the unicode string provided
+ *
+ * @param[in]       String - The string to be hashed.
+ * @param[out]      Hash   - The hash of the unicode string
+ *
+ * @return          A proper ntstatus error code.
+ *
+ * @note            This uses the RtlHashUnicodeString with the
+ *                  HASH_STRING_ALGORITHM_DEFAULT hash type.
+ *                  Currently, the default algorithm is the x65599 hashing algorithm.
+ */
+_IRQL_requires_max_(PASSIVE_LEVEL)
+NTSTATUS XPF_API
+HelperHashUnicodeString(
+    _In_ _Const_ const xpf::StringView<wchar_t>& String,
+    _Out_ uint32_t* Hash
+) noexcept(true);
+
+/**
  * @brief           Implements functionality of finding an export
  *                  by walking the export table.
  *

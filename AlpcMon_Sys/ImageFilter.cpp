@@ -15,7 +15,10 @@
 #include "precomp.hpp"
 #include "KmHelper.hpp"
 #include "Events.hpp"
+#include "HashUtils.hpp"
 #include "globals.hpp"
+
+#include "ModuleCollector.hpp"
 
 #include "ImageFilter.hpp"
 #include "trace.hpp"
@@ -136,30 +139,41 @@ ImageFilterImageLoadNotifyRoutineCallback(
 
     NTSTATUS status = STATUS_UNSUCCESSFUL;
     bool isKernelImage = false;
-    xpf::StringView<wchar_t> fullImagePath;
+    xpf::String<wchar_t> fullImagePath;
     xpf::UniquePointer<xpf::IEvent> broadcastEvent;
+
+    PIMAGE_INFO_EX imageInfoExtended = nullptr;
+
+    //
+    // Extended info flag must always be present from Vista+.
+    // So assert here and bail early.
+    //
+    if (0 == ImageInfo->ExtendedInfoPresent)
+    {
+        XPF_ASSERT(false);
+        return;
+    }
+    imageInfoExtended = CONTAINING_RECORD(ImageInfo, IMAGE_INFO_EX, ImageInfo);
+
+    //
+    // Use the file object to retrieve the image path. FullImageName migh be partial.
+    //
+    status = KmHelper::File::QueryFileNameFromObject(imageInfoExtended->FileObject,
+                                                     fullImagePath);
+    if (!NT_SUCCESS(status))
+    {
+        SysMonLogWarning("QueryFileNameFromObject failed with %!STATUS!",
+                         status);
+        return;
+    }
 
     //
     // Log for trace.
     //
-    SysMonLogInfo("Image loaded in pid %d - %wZ.",
+    SysMonLogInfo("Image loaded in pid %d - %wZ (%S)",
                   HandleToUlong(ProcessId),
-                  FullImageName);
-
-    //
-    // If we have the image path, we use it, otherwise we broadcast as empty.
-    //
-    if (NULL != FullImageName)
-    {
-        status = KmHelper::HelperUnicodeStringToView(*FullImageName,
-                                                     fullImagePath);
-        if (!NT_SUCCESS(status))
-        {
-            SysMonLogWarning("Could not get image name %!STATUS!",
-                             status);
-            fullImagePath.Reset();
-        }
-    }
+                  FullImageName,
+                  fullImagePath.View().Buffer());
 
     //
     // If process id is 0, this is a kernel image.
@@ -168,11 +182,16 @@ ImageFilterImageLoadNotifyRoutineCallback(
                                         : false;
 
     //
+    // Cache the new module.
+    //
+    ModuleCollectorHandleNewModule(fullImagePath.View());
+
+    //
     // Create the event.
     //
     status = SysMon::ImageLoadEvent::Create(broadcastEvent,
                                             HandleToUlong(ProcessId),
-                                            fullImagePath,
+                                            fullImagePath.View(),
                                             isKernelImage,
                                             ImageInfo->ImageBase,
                                             ImageInfo->ImageSize);

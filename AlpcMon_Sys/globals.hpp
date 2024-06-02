@@ -15,6 +15,7 @@
 #pragma once
 
 #include "precomp.hpp"
+#include "WorkQueue.hpp"
 
 /**
  * @brief       Creates the global data.
@@ -58,6 +59,17 @@ GlobalDataDestroy(
 _IRQL_requires_max_(DISPATCH_LEVEL)
 xpf::EventBus* XPF_API
 GlobalDataGetBusInstance(
+    void
+) noexcept(true);
+
+/**
+ * @brief       Getter for the global work queue.
+ *
+ * @return      The underlying work queue instance.
+ */
+_IRQL_requires_max_(DISPATCH_LEVEL)
+KmHelper::WorkQueue* XPF_API
+GlobalDataGetWorkQueueInstance(
     void
 ) noexcept(true);
 
@@ -228,6 +240,20 @@ RtlImageDirectoryEntryToData(
     _In_ USHORT DirectoryEntry,
     _Out_ PULONG Size
 );
+
+//
+// -------------------------------------------------------------------------------------------------------------------
+// | ****************************************************************************************************************|
+// |                         ObGetObjectType                                                                         |
+// | ****************************************************************************************************************|
+// -------------------------------------------------------------------------------------------------------------------
+//
+
+NTSYSAPI POBJECT_TYPE NTAPI
+ObGetObjectType(
+    _In_ PVOID Object
+);
+
 
 //
 // -------------------------------------------------------------------------------------------------------------------

@@ -150,7 +150,7 @@
     <Link>
       <CETCompat>true</CETCompat>
       <DataExecutionPrevention>true</DataExecutionPrevention>
-      <AdditionalDependencies>XPF-Lib_Sys.lib;netio.lib;fltmgr.lib;%(AdditionalDependencies);$(KernelBufferOverflowLib);$(DDK_LIB_PATH)ntoskrnl.lib;$(DDK_LIB_PATH)hal.lib;$(DDK_LIB_PATH)wmilib.lib</AdditionalDependencies>
+      <AdditionalDependencies>XPF-Lib_Sys.lib;netio.lib;fltmgr.lib;ksecdd.lib;%(AdditionalDependencies);$(KernelBufferOverflowLib);$(DDK_LIB_PATH)ntoskrnl.lib;$(DDK_LIB_PATH)hal.lib;$(DDK_LIB_PATH)wmilib.lib</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(SolutionDir)\out\$(Platform)\$(Configuration)\XPF-Lib_Sys\</AdditionalLibraryDirectories>
       <AdditionalOptions>/INTEGRITYCHECK /BREPRO /FILEALIGN:0x1000 %(AdditionalOptions)</AdditionalOptions>
       <LinkTimeCodeGeneration>
@@ -208,7 +208,7 @@
     <Link>
       <CETCompat>true</CETCompat>
       <DataExecutionPrevention>true</DataExecutionPrevention>
-      <AdditionalDependencies>XPF-Lib_Sys.lib;netio.lib;fltmgr.lib;%(AdditionalDependencies);$(KernelBufferOverflowLib);$(DDK_LIB_PATH)ntoskrnl.lib;$(DDK_LIB_PATH)hal.lib;$(DDK_LIB_PATH)wmilib.lib</AdditionalDependencies>
+      <AdditionalDependencies>XPF-Lib_Sys.lib;netio.lib;fltmgr.lib;ksecdd.lib;%(AdditionalDependencies);$(KernelBufferOverflowLib);$(DDK_LIB_PATH)ntoskrnl.lib;$(DDK_LIB_PATH)hal.lib;$(DDK_LIB_PATH)wmilib.lib</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(SolutionDir)\out\$(Platform)\$(Configuration)\XPF-Lib_Sys\</AdditionalLibraryDirectories>
       <AdditionalOptions>/INTEGRITYCHECK /BREPRO /FILEALIGN:0x1000 %(AdditionalOptions)</AdditionalOptions>
       <LinkTimeCodeGeneration>
@@ -268,7 +268,7 @@
     <Link>
       <CETCompat>true</CETCompat>
       <DataExecutionPrevention>true</DataExecutionPrevention>
-      <AdditionalDependencies>XPF-Lib_Sys.lib;netio.lib;fltmgr.lib;%(AdditionalDependencies);$(KernelBufferOverflowLib);$(DDK_LIB_PATH)ntoskrnl.lib;$(DDK_LIB_PATH)hal.lib;$(DDK_LIB_PATH)wmilib.lib</AdditionalDependencies>
+      <AdditionalDependencies>XPF-Lib_Sys.lib;netio.lib;fltmgr.lib;ksecdd.lib;%(AdditionalDependencies);$(KernelBufferOverflowLib);$(DDK_LIB_PATH)ntoskrnl.lib;$(DDK_LIB_PATH)hal.lib;$(DDK_LIB_PATH)wmilib.lib</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(SolutionDir)\out\$(Platform)\$(Configuration)\XPF-Lib_Sys\</AdditionalLibraryDirectories>
       <AdditionalOptions>/INTEGRITYCHECK /BREPRO /FILEALIGN:0x1000 /guard:retpoline %(AdditionalOptions)</AdditionalOptions>
       <LinkTimeCodeGeneration>
@@ -327,7 +327,7 @@
     <Link>
       <CETCompat>true</CETCompat>
       <DataExecutionPrevention>true</DataExecutionPrevention>
-      <AdditionalDependencies>XPF-Lib_Sys.lib;netio.lib;fltmgr.lib;%(AdditionalDependencies);$(KernelBufferOverflowLib);$(DDK_LIB_PATH)ntoskrnl.lib;$(DDK_LIB_PATH)hal.lib;$(DDK_LIB_PATH)wmilib.lib</AdditionalDependencies>
+      <AdditionalDependencies>XPF-Lib_Sys.lib;netio.lib;fltmgr.lib;ksecdd.lib;%(AdditionalDependencies);$(KernelBufferOverflowLib);$(DDK_LIB_PATH)ntoskrnl.lib;$(DDK_LIB_PATH)hal.lib;$(DDK_LIB_PATH)wmilib.lib</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(SolutionDir)\out\$(Platform)\$(Configuration)\XPF-Lib_Sys\</AdditionalLibraryDirectories>
       <AdditionalOptions>/INTEGRITYCHECK /BREPRO /FILEALIGN:0x1000 /guard:retpoline %(AdditionalOptions)</AdditionalOptions>
       <LinkTimeCodeGeneration>
@@ -353,6 +353,7 @@
     <ClCompile Include="Events.cpp" />
     <ClCompile Include="FirmwareTableHandlerFilter.cpp" />
     <ClCompile Include="globals.cpp" />
+    <ClCompile Include="HashUtils.cpp" />
     <ClCompile Include="ImageFilter.cpp" />
     <ClCompile Include="KmHelper.cpp" />
     <ClCompile Include="main.cpp">
@@ -361,6 +362,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Use</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Use</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="ModuleCollector.cpp" />
     <ClCompile Include="PluginManager.cpp" />
     <ClCompile Include="precomp.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
@@ -374,6 +376,7 @@
     <ClCompile Include="RpcEngine.cpp" />
     <ClCompile Include="ThreadFilter.cpp" />
     <ClCompile Include="UmHookPlugin.cpp" />
+    <ClCompile Include="WorkQueue.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\XPF-Lib_Sys\XPF-Lib_sys.vcxproj">
@@ -385,8 +388,10 @@
     <ClInclude Include="Events.hpp" />
     <ClInclude Include="FirmwareTableHandlerFilter.hpp" />
     <ClInclude Include="globals.hpp" />
+    <ClInclude Include="HashUtils.hpp" />
     <ClInclude Include="ImageFilter.hpp" />
     <ClInclude Include="KmHelper.hpp" />
+    <ClInclude Include="ModuleCollector.hpp" />
     <ClInclude Include="PluginManager.hpp" />
     <ClInclude Include="precomp.hpp" />
     <ClInclude Include="ProcessFilter.hpp" />
@@ -396,6 +401,7 @@
     <ClInclude Include="ThreadFilter.hpp" />
     <ClInclude Include="trace.hpp" />
     <ClInclude Include="UmHookPlugin.hpp" />
+    <ClInclude Include="WorkQueue.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

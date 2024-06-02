@@ -19,6 +19,7 @@
 #include "ThreadFilter.hpp"
 #include "ImageFilter.hpp"
 #include "FirmwareTableHandlerFilter.hpp"
+#include "ModuleCollector.hpp"
 
 #include "trace.hpp"
 
@@ -107,6 +108,11 @@ DriverUnload(
     ProcessFilterStop();
 
     //
+    // Destroy the collectors.
+    //
+    ModuleCollectorDestroy();
+
+    //
     // Destroy the globals.
     //
     GlobalDataDestroy();
@@ -161,6 +167,8 @@ DriverEntry(
     BOOLEAN isCppSupportInitialized = FALSE;
     BOOLEAN isGlobalDataCreated = FALSE;
 
+    BOOLEAN isModuleCollectorCreated = FALSE;
+
     BOOLEAN isProcessFilteringStarted = FALSE;
     BOOLEAN isThreadFilteringStarted = FALSE;
     BOOLEAN isImageFilteringStarted = FALSE;
@@ -205,6 +213,18 @@ DriverEntry(
         goto CleanUp;
     }
     isGlobalDataCreated = TRUE;
+
+    //
+    // Now the collectors.
+    //
+    status = ModuleCollectorCreate();
+    if (!NT_SUCCESS(status))
+    {
+        SysMonLogError("Failed to create the module collector %!STATUS!",
+                       status);
+        goto CleanUp;
+    }
+    isModuleCollectorCreated = TRUE;
 
     //
     // Now start the process filter.
@@ -291,6 +311,12 @@ CleanUp:
         {
             ProcessFilterStop();
             isProcessFilteringStarted = FALSE;
+        }
+
+        if (FALSE != isModuleCollectorCreated)
+        {
+            ModuleCollectorDestroy();
+            isModuleCollectorCreated = FALSE;
         }
 
         if (FALSE != isGlobalDataCreated)
