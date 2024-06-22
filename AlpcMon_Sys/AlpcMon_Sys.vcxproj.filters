@@ -109,6 +109,9 @@
     <ClCompile Include="ModuleCollector.cpp">
       <Filter>Source Files\Collectors</Filter>
     </ClCompile>
+    <ClCompile Include="PdbHelper.cpp">
+      <Filter>Source Files\Utils</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="trace.hpp">
@@ -163,6 +166,9 @@
       <Filter>Header Files\Collectors</Filter>
     </ClInclude>
     <ClInclude Include="WorkQueue.hpp">
+      <Filter>Header Files\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="PdbHelper.hpp">
       <Filter>Header Files\Utils</Filter>
     </ClInclude>
   </ItemGroup>

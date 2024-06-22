@@ -39,6 +39,12 @@ enum class FileAccessType
      *          Equivalent to FILE_GENERIC_READ
      */
     kRead = 1,
+
+    /**
+     * @brief   Requires write access to the file.
+     *          Equivalent to FILE_GENERIC_WRITE.
+     */
+    kWrite = 2,
 };  // enum class FileAccessType
 
 /**
@@ -75,6 +81,28 @@ _IRQL_requires_max_(PASSIVE_LEVEL)
 VOID
 CloseFile(
     _Inout_ PHANDLE Handle
+) noexcept(true);
+
+
+/**
+ * @brief       This is used to write a buffer to a file.
+ *
+ * @param[in]   FileHandle  - A handle to the opened file.
+ * @param[in]   Buffer      - A buffer to be written.
+ * @param[in]   BufferSize  - Number of bytes in Buffer.
+ *
+ * @return      A proper NTSTATUS error code.
+ *
+ * @note        It is recommended to open files from a separated system thread to avoid potential deadlocks.
+ *              Leverage Work-Queue mechanism. Use this routine with care!
+ */
+_IRQL_requires_max_(PASSIVE_LEVEL)
+_Must_inspect_result_
+NTSTATUS
+WriteFile(
+    _In_ HANDLE FileHandle,
+    _In_ const uint8_t* Buffer,
+    _In_ size_t BufferSize
 ) noexcept(true);
 
 /**

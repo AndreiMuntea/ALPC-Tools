@@ -363,6 +363,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Use</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="ModuleCollector.cpp" />
+    <ClCompile Include="PdbHelper.cpp" />
     <ClCompile Include="PluginManager.cpp" />
     <ClCompile Include="precomp.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
@@ -392,6 +393,7 @@
     <ClInclude Include="ImageFilter.hpp" />
     <ClInclude Include="KmHelper.hpp" />
     <ClInclude Include="ModuleCollector.hpp" />
+    <ClInclude Include="PdbHelper.hpp" />
     <ClInclude Include="PluginManager.hpp" />
     <ClInclude Include="precomp.hpp" />
     <ClInclude Include="ProcessFilter.hpp" />

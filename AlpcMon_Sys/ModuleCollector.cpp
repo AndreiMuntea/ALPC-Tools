@@ -3,7 +3,8 @@
 
 #include "HashUtils.hpp"
 #include "KmHelper.hpp"
-#include "globals.hpp"
+#include "WorkQueue.hpp"
+#include "PdbHelper.hpp"
 
 #include "ModuleCollector.hpp"
 #include "trace.hpp"
@@ -178,7 +179,6 @@ class ModuleData final
     KmHelper::File::HashType m_ModuleHashType = KmHelper::File::HashType::kMd5;
 };  // class ModuleData
 
-
 /**
  * @brief   This will be passed to a work callback to help with async initialization of modules.
  *          From a work routine we'll do all the work and then emplace the module into the
@@ -214,7 +214,14 @@ class ModuleCollector final
     /**
      * @brief   Default destructor.
      */
-    ~ModuleCollector(void) noexcept(true) = default;
+    ~ModuleCollector(void) noexcept(true)
+    {
+        /* Code is paged. */
+        XPF_MAX_APC_LEVEL();
+
+        /* The queue must be ran down before destroying other members. */
+        this->m_ModulesWorkQueue.Reset();
+    }
 
     /**
      * @brief   Copy and move are deleted for this class.
@@ -254,6 +261,7 @@ class ModuleCollector final
         {
             goto CleanUp;
         }
+        instance->m_ModulesWorkQueue.Emplace();
 
         /* All good. */
         status = STATUS_SUCCESS;
@@ -443,10 +451,29 @@ class ModuleCollector final
         }
     }
 
+    /**
+     * @brief       Grabs the modules work queue which can be used to schedule work
+     *              related to offline initialization of a module.
+     *
+     * @return      A reference to the underlying WorkQueue.
+     */
+    inline KmHelper::WorkQueue&
+    XPF_API
+    WorkQueue(
+        void
+    ) noexcept(true)
+    {
+        /* Code is paged. */
+        XPF_MAX_APC_LEVEL();
+
+        return (*this->m_ModulesWorkQueue);
+    }
+
  private:
     xpf::Optional<xpf::ReadWriteLock> m_ModulesLock;
     xpf::Vector<xpf::SharedPointer<SysMon::ModuleData>> m_Modules;
     xpf::LookasideListAllocator m_ModuleContextAllocator;
+    xpf::Optional<KmHelper::WorkQueue> m_ModulesWorkQueue;
 
     /**
      * @brief   Default MemoryAllocator is our friend as it requires access to the private
@@ -515,12 +542,32 @@ ModuleCollectorWorkerCallback(
     status = KmHelper::File::HashFile(fileHandle,
                                       hashType,
                                       hash);
-    /* Close the handle regardless of status. */
-    KmHelper::File::CloseFile(&fileHandle);
-
     if (!NT_SUCCESS(status))
     {
         goto CleanUp;
+    }
+
+    /* If this is a windows module we try to retrieve .pdb information */
+    if (data->Path.View().Substring(L"\\Windows\\", false, nullptr))
+    {
+        xpf::String<wchar_t> pdbSignatureAndAge;
+        xpf::String<wchar_t> pdbName;
+
+        status = PdbHelper::ExtractPdbInformationFromFile(fileHandle,
+                                                          &pdbSignatureAndAge,
+                                                          &pdbName);
+        if (!NT_SUCCESS(status))
+        {
+            goto CleanUp;
+        }
+
+        status = PdbHelper::ResolvePdb(pdbName.View(),
+                                       pdbSignatureAndAge.View(),
+                                       L"\\??\\C:\\Symbols\\");
+        if (!NT_SUCCESS(status))
+        {
+            goto CleanUp;
+        }
     }
 
     /* Now insert it into module collector. */
@@ -535,6 +582,7 @@ ModuleCollectorWorkerCallback(
     }
 
 CleanUp:
+    KmHelper::File::CloseFile(&fileHandle);
     gModuleCollector->DestroyModuleContext(data);
 }
 
@@ -550,9 +598,9 @@ ModuleCollectorCacheNewModule(
     if (moduleContext)
     {
         /* Enqueue the work item and do not wait inline to finish. */
-        GlobalDataGetWorkQueueInstance()->EnqueueWork(ModuleCollectorWorkerCallback,
-                                                      moduleContext,
-                                                      false);
+        gModuleCollector->WorkQueue().EnqueueWork(ModuleCollectorWorkerCallback,
+                                                  moduleContext,
+                                                  false);
     }
 }
 

@@ -106,6 +106,13 @@ KmHelper::File::OpenFile(
             createDisposition = FILE_OPEN;
             break;
         }
+        case KmHelper::File::FileAccessType::kWrite:
+        {
+            desiredAccess = FILE_GENERIC_WRITE;
+            shareAccess = 0;
+            createDisposition = FILE_OVERWRITE_IF;
+            break;
+        }
         default:
         {
             XPF_ASSERT(false);
@@ -124,7 +131,7 @@ KmHelper::File::OpenFile(
     /* And finally open the file. */
     InitializeObjectAttributes(&fileAttributes,
                                &fileName,
-                               OBJ_KERNEL_HANDLE | OBJ_FORCE_ACCESS_CHECK,
+                               OBJ_KERNEL_HANDLE | OBJ_FORCE_ACCESS_CHECK | OBJ_CASE_INSENSITIVE,
                                NULL,
                                NULL);
 
@@ -143,6 +150,12 @@ KmHelper::File::OpenFile(
     {
         *Handle = NULL;
     }
+    if (!NT_SUCCESS(fileIoStatusBlock.Status))
+    {
+        *Handle = NULL;
+        status = fileIoStatusBlock.Status;
+    }
+
     return status;
 }
 
@@ -171,6 +184,58 @@ KmHelper::File::CloseFile(
 
 _Use_decl_annotations_
 NTSTATUS
+KmHelper::File::WriteFile(
+    _In_ HANDLE FileHandle,
+    _In_ const uint8_t* Buffer,
+    _In_ size_t BufferSize
+) noexcept(true)
+{
+    XPF_MAX_PASSIVE_LEVEL();
+
+    XPF_DEATH_ON_FAILURE(nullptr != FileHandle);
+
+    IO_STATUS_BLOCK fileIoStatusBlock = { 0 };
+    NTSTATUS status = STATUS_UNSUCCESSFUL;
+
+    if (::KeAreAllApcsDisabled())
+    {
+        return STATUS_INVALID_STATE_TRANSITION;
+    }
+    if (BufferSize >= xpf::NumericLimits<uint32_t>::MaxValue())
+    {
+        return STATUS_INVALID_BUFFER_SIZE;
+    }
+
+    /* ZwWriteFile is poorly declared with Buffer as void* instead of const. */
+    status = ::ZwWriteFile(FileHandle,
+                           NULL,
+                           NULL,
+                           NULL,
+                           &fileIoStatusBlock,
+                           reinterpret_cast<PVOID>(static_cast<ULONG_PTR>(xpf::AlgoPointerToValue(Buffer))),
+                           static_cast<uint32_t>(BufferSize),
+                           NULL,
+                           NULL);
+    if (!NT_SUCCESS(status))
+    {
+        return status;
+    }
+    if (!NT_SUCCESS(fileIoStatusBlock.Status))
+    {
+        return fileIoStatusBlock.Status;
+    }
+
+    if (fileIoStatusBlock.Information != BufferSize)
+    {
+        return STATUS_BUFFER_TOO_SMALL;
+    }
+
+    return STATUS_SUCCESS;
+}
+
+
+_Use_decl_annotations_
+NTSTATUS
 KmHelper::File::QueryFileSize(
     _In_ HANDLE FileHandle,
     _Out_ uint64_t* FileSize
@@ -193,6 +258,10 @@ KmHelper::File::QueryFileSize(
     if (!NT_SUCCESS(status))
     {
         return status;
+    }
+    if (!NT_SUCCESS(ioStatusBlock.Status))
+    {
+        return ioStatusBlock.Status;
     }
 
     /* If fileStandardInfo was not properly populated we bail. */
@@ -350,11 +419,13 @@ QueryFileNameFromObjectFallback(
     XPF_MAX_PASSIVE_LEVEL();
 
     FileObjectFileNameContext context;
+    KmHelper::WorkQueue workQueue;
+
     context.FileObject = FileObject;
 
-    GlobalDataGetWorkQueueInstance()->EnqueueWork(QueryFileNameFromObjectWorker,
-                                                  &context,
-                                                  true);
+    workQueue.EnqueueWork(QueryFileNameFromObjectWorker,
+                          &context,
+                          true);
     if (!NT_SUCCESS(context.status))
     {
         return context.status;

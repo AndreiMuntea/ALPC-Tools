@@ -57,10 +57,6 @@ struct GlobalData
      */
     xpf::EventBus EventBus;
     /**
-     * @brief   Global work queue.
-     */
-    KmHelper::WorkQueue WorkQueue;
-    /**
      * @brief   Keeps track of all plugins. 
      */
     xpf::Optional<SysMon::PluginManager> PluginManager;
@@ -69,9 +65,9 @@ struct GlobalData
      */
     xpf::String<wchar_t, xpf::CriticalMemoryAllocator> RegistryKey;
     /**
-     * @brief   The driver's running directory.
+     * @brief   The driver's running directory as Dos path.
      */
-    xpf::String<wchar_t, xpf::CriticalMemoryAllocator> DriverDirectory;
+    xpf::String<wchar_t, xpf::CriticalMemoryAllocator> DriverDirectoryDos;
     /**
      * @brief   The os version.
      */
@@ -110,26 +106,6 @@ GlobalDataGetBusInstance(
     XPF_MAX_DISPATCH_LEVEL();
 
     return xpf::AddressOf(gGlobalData->EventBus);
-}
-
-
-//
-// -------------------------------------------------------------------------------------------------------------------
-// | ****************************************************************************************************************|
-// |                                       GlobalDataGetWorkQueueInstance                                            |
-// | ****************************************************************************************************************|
-// -------------------------------------------------------------------------------------------------------------------
-//
-
-_Use_decl_annotations_
-KmHelper::WorkQueue* XPF_API
-GlobalDataGetWorkQueueInstance(
-    void
-) noexcept(true)
-{
-    XPF_MAX_DISPATCH_LEVEL();
-
-    return xpf::AddressOf(gGlobalData->WorkQueue);
 }
 
 //
@@ -197,7 +173,7 @@ GlobalDataGetRegistryKey(
 //
 // -------------------------------------------------------------------------------------------------------------------
 // | ****************************************************************************************************************|
-// |                                       GlobalDataGetRegistryKey                                                  |
+// |                                       GlobalDataGetDosInstallationDirectory                                     |
 // | ****************************************************************************************************************|
 // -------------------------------------------------------------------------------------------------------------------
 //
@@ -205,13 +181,13 @@ GlobalDataGetRegistryKey(
 
 _Use_decl_annotations_
 const xpf::StringView<wchar_t> XPF_API
-GlobalDataGetInstallationDirectory(
+GlobalDataGetDosInstallationDirectory(
     void
 ) noexcept(true)
 {
     XPF_MAX_DISPATCH_LEVEL();
 
-    return gGlobalData->DriverDirectory.View();
+    return gGlobalData->DriverDirectoryDos.View();
 }
 
 //
@@ -324,7 +300,7 @@ GlobalDataCreate(
                        status);
         goto CleanUp;
     }
-    status = gGlobalData->DriverDirectory.Append(static_cast<const wchar_t*>(regKeyBuffer.GetBuffer()));
+    status = gGlobalData->DriverDirectoryDos.Append(static_cast<const wchar_t*>(regKeyBuffer.GetBuffer()));
     if (!NT_SUCCESS(status))
     {
         SysMonLogError("Saving driver directory from registry key failed with %!STATUS!",

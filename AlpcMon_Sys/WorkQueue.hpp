@@ -63,7 +63,6 @@ class WorkQueue final
         _In_opt_ xpf::thread::CallbackArgument Argument,
         _In_ bool Wait
      ) noexcept(true);
-
  private:
      /**
       * @brief      We are using a separated callback so we can have better control

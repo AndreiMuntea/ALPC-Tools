@@ -570,7 +570,7 @@ SysMon::UmHookPlugin::Create(
     //
     // Now construct the win32 injection dll.
     //
-    status = umHookPlugin.m_UmDllWin32Path.Append(GlobalDataGetInstallationDirectory());
+    status = umHookPlugin.m_UmDllWin32Path.Append(GlobalDataGetDosInstallationDirectory());
     if (!NT_SUCCESS(status))
     {
         SysMonLogError("m_UmDllWin32Path create failed with status = %!STATUS!",
@@ -590,7 +590,7 @@ SysMon::UmHookPlugin::Create(
     //
     // Now construct the x64 injection dll.
     //
-    status = umHookPlugin.m_UmDllX64Path.Append(GlobalDataGetInstallationDirectory());
+    status = umHookPlugin.m_UmDllX64Path.Append(GlobalDataGetDosInstallationDirectory());
     if (!NT_SUCCESS(status))
     {
         SysMonLogError("m_UmDllX64Path create failed with status = %!STATUS!",

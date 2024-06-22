@@ -63,17 +63,6 @@ GlobalDataGetBusInstance(
 ) noexcept(true);
 
 /**
- * @brief       Getter for the global work queue.
- *
- * @return      The underlying work queue instance.
- */
-_IRQL_requires_max_(DISPATCH_LEVEL)
-KmHelper::WorkQueue* XPF_API
-GlobalDataGetWorkQueueInstance(
-    void
-) noexcept(true);
-
-/**
  * @brief       Getter for the version info of the os.
  *
  * @return      The os version info.
@@ -102,7 +91,7 @@ GlobalDataGetRegistryKey(
  */
 _IRQL_requires_max_(DISPATCH_LEVEL)
 const xpf::StringView<wchar_t> XPF_API
-GlobalDataGetInstallationDirectory(
+GlobalDataGetDosInstallationDirectory(
     void
 ) noexcept(true);
 

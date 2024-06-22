@@ -21,6 +21,8 @@
 #include "FirmwareTableHandlerFilter.hpp"
 #include "ModuleCollector.hpp"
 
+#include "PdbHelper.hpp"
+
 #include "trace.hpp"
 
 
