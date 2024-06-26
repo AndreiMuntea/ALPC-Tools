@@ -62,7 +62,7 @@ ModuleCollectorDestroy(
  * @return      Nothing.
  */
 _IRQL_requires_max_(PASSIVE_LEVEL)
-VOID XPF_API
+void XPF_API
 ModuleCollectorHandleNewModule(
     _In_ _Const_ const xpf::StringView<wchar_t>& ModulePath
 ) noexcept(true);

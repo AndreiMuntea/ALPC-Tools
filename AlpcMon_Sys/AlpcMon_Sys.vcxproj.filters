@@ -112,6 +112,9 @@
     <ClCompile Include="PdbHelper.cpp">
       <Filter>Source Files\Utils</Filter>
     </ClCompile>
+    <ClCompile Include="ProcessCollector.cpp">
+      <Filter>Source Files\Collectors</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="trace.hpp">
@@ -170,6 +173,9 @@
     </ClInclude>
     <ClInclude Include="PdbHelper.hpp">
       <Filter>Header Files\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="ProcessCollector.hpp">
+      <Filter>Header Files\Collectors</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

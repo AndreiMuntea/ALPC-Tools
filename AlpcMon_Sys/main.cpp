@@ -20,6 +20,7 @@
 #include "ImageFilter.hpp"
 #include "FirmwareTableHandlerFilter.hpp"
 #include "ModuleCollector.hpp"
+#include "ProcessCollector.hpp"
 
 #include "PdbHelper.hpp"
 
@@ -113,6 +114,7 @@ DriverUnload(
     // Destroy the collectors.
     //
     ModuleCollectorDestroy();
+    ProcessCollectorDestroy();
 
     //
     // Destroy the globals.
@@ -170,6 +172,7 @@ DriverEntry(
     BOOLEAN isGlobalDataCreated = FALSE;
 
     BOOLEAN isModuleCollectorCreated = FALSE;
+    BOOLEAN isProcessCollectorCreated = FALSE;
 
     BOOLEAN isProcessFilteringStarted = FALSE;
     BOOLEAN isThreadFilteringStarted = FALSE;
@@ -219,6 +222,15 @@ DriverEntry(
     //
     // Now the collectors.
     //
+    status = ProcessCollectorCreate();
+    if (!NT_SUCCESS(status))
+    {
+        SysMonLogError("Failed to create the process collector %!STATUS!",
+                       status);
+        goto CleanUp;
+    }
+    isProcessCollectorCreated = TRUE;
+
     status = ModuleCollectorCreate();
     if (!NT_SUCCESS(status))
     {
@@ -319,6 +331,12 @@ CleanUp:
         {
             ModuleCollectorDestroy();
             isModuleCollectorCreated = FALSE;
+        }
+
+        if (FALSE != isProcessCollectorCreated)
+        {
+            ProcessCollectorDestroy();
+            isProcessCollectorCreated = FALSE;
         }
 
         if (FALSE != isGlobalDataCreated)

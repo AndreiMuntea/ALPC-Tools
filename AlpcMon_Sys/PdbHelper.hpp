@@ -19,48 +19,25 @@
 namespace PdbHelper
 {
 /**
- * @brief       This extracts the program database information from an already opened file.
- *              The file must have been opened with read access. The file must be a dll or executable.
+ * @brief       This extracts the program database information for an already opened file.
+ *              The file must be a .exe or .dll.
+ *              An HTTP request to http://msdl.microsoft.com/download/symbols is performed
+ *              to retrieve the required .pdb file.
  *
- * @param[in]   FileHandle      - The handle to the opened module.
- * @param[out]  PdbGuidAndAge   - Extracted PDB information required to download the pdb symbol.
- * @param[out]  PdbName         - Extracted PDB name required to download the pdb symbol.
- *
- * @return      A proper NTSTATUS error code.
- */
-_Must_inspect_result_
-_IRQL_requires_max_(PASSIVE_LEVEL)
-NTSTATUS XPF_API
-ExtractPdbInformationFromFile(
-    _In_ HANDLE FileHandle,
-    _Out_ xpf::String<wchar_t>* PdbGuidAndAge,
-    _Out_ xpf::String<wchar_t>* PdbName
-) noexcept(true);
-
-/**
- * @brief       Checks if pdb is available locally, otherwise it downloads the pdb for the given file name.
- *              The pdb file is saved on disk.
- *
- * @param[in]   FileName         - Name of the file for which the pdb is requested.
- *                                 For example "ntdll"
- * @param[in]   PdbGuidAndAge    - As there can be multiple ntdll versions, the specific
- *                                 version is identified by its guid and age.
+ * @param[in]   FileHandle       - The handle to the opened module.
  * @param[in]   PdbDirectoryPath - The directory where to save the pdb on disk.
  *                                 This must exist.
+ * @param[out]  Symbols          - Extracted symbols from the .pdb files.
  *
  * @return      A proper NTSTATUS error code.
- *              On success, the <PdbDirectoryPath>\\<FileName>_<MD5>.pdb file is created.
- *
- * @note        An HTTP request to http://msdl.microsoft.com/download/symbols is performed.
- * @note        It is recommended to use a system thread for this functionality.
- *              Leverage work queue or threadpool mechanisms.
  */
 _Must_inspect_result_
 _IRQL_requires_max_(PASSIVE_LEVEL)
 NTSTATUS XPF_API
-ResolvePdb(
-    _In_ _Const_ const xpf::StringView<wchar_t>& FileName,
-    _In_ _Const_ const xpf::StringView<wchar_t>& PdbGuidAndAge,
-    _In_ _Const_ const xpf::StringView<wchar_t>& PdbDirectoryPath
+ExtractPdbSymbolInformation(
+    _In_ HANDLE FileHandle,
+    _In_ _Const_ const xpf::StringView<wchar_t>& PdbDirectoryPath,
+    _Out_ xpf::Vector<xpf::pdb::SymbolInformation>* Symbols
 ) noexcept(true);
+
 };  // namespace PdbHelper

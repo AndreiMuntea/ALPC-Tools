@@ -19,6 +19,7 @@
 #include "globals.hpp"
 
 #include "ModuleCollector.hpp"
+#include "ProcessCollector.hpp"
 
 #include "ImageFilter.hpp"
 #include "trace.hpp"
@@ -180,12 +181,26 @@ ImageFilterImageLoadNotifyRoutineCallback(
     //
     isKernelImage = (NULL == ProcessId) ? true
                                         : false;
+    if (isKernelImage)
+    {
+        //
+        // System process has PID 4 - always. So we'll dispatch
+        // the event with pid = 4 as it belongs in system process.
+        //
+        ProcessId = UlongToHandle(4);
+    }
 
     //
     // Cache the new module.
     //
+    // Q - should process collector and module collector register to image load event instead?
+    //     this way we'll decouple the filter from the collector.
+    //
     ModuleCollectorHandleNewModule(fullImagePath.View());
-
+    ProcessCollectorHandleLoadModule(HandleToUlong(ProcessId),
+                                     fullImagePath.View(),
+                                     ImageInfo->ImageBase,
+                                     ImageInfo->ImageSize);
     //
     // Create the event.
     //

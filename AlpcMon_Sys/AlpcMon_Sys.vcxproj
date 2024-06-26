@@ -371,6 +371,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="ProcessCollector.cpp" />
     <ClCompile Include="ProcessFilter.cpp" />
     <ClCompile Include="RegistryUtils.cpp" />
     <ClCompile Include="RpcAlpcInspectionPlugin.cpp" />
@@ -396,6 +397,7 @@
     <ClInclude Include="PdbHelper.hpp" />
     <ClInclude Include="PluginManager.hpp" />
     <ClInclude Include="precomp.hpp" />
+    <ClInclude Include="ProcessCollector.hpp" />
     <ClInclude Include="ProcessFilter.hpp" />
     <ClInclude Include="RegistryUtils.hpp" />
     <ClInclude Include="RpcAlpcInspectionPlugin.hpp" />

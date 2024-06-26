@@ -110,10 +110,20 @@ typedef struct _CODEVIEW_PDB_INFO
     } Info;
 } CODEVIEW_PDB_INFO;
 
-
-_Use_decl_annotations_
-NTSTATUS XPF_API
-PdbHelper::ExtractPdbInformationFromFile(
+/**
+ * @brief       This extracts the program database information from an already opened file.
+ *              The file must have been opened with read access. The file must be a dll or executable.
+ *
+ * @param[in]   FileHandle      - The handle to the opened module.
+ * @param[out]  PdbGuidAndAge   - Extracted PDB information required to download the pdb symbol.
+ * @param[out]  PdbName         - Extracted PDB name required to download the pdb symbol.
+ *
+ * @return      A proper NTSTATUS error code.
+ */
+_Must_inspect_result_
+_IRQL_requires_max_(PASSIVE_LEVEL)
+static NTSTATUS XPF_API
+PdbHelperExtractPdbInformationFromFile(
     _In_ HANDLE FileHandle,
     _Out_ xpf::String<wchar_t>* PdbGuidAndAge,
     _Out_ xpf::String<wchar_t>* PdbName
@@ -252,12 +262,89 @@ CleanUp:
     return status;
 }
 
-_Use_decl_annotations_
-NTSTATUS XPF_API
-PdbHelper::ResolvePdb(
+/**
+ * @brief       Helper method to compute the full pdb path of a file.
+ *
+ * @param[in]   FileName         - Name of the file for which the pdb is requested.
+ *                                 For example "ntdll"
+ * @param[in]   PdbGuidAndAge    - As there can be multiple ntdll versions, the specific
+ *                                 version is identified by its guid and age.
+ * @param[in]   PdbDirectoryPath - The directory where to save the pdb on disk.
+ *                                 This must exist.
+ * @param[out]  PdbFullFilePath  - Will store the full pdb file path. Its form will be:
+ *                                 PdbDirectoryPath/PdbGuidAndAge_FileName.
+ *
+ * @return      A proper NTSTATUS error code.
+ */
+_Must_inspect_result_
+_IRQL_requires_max_(PASSIVE_LEVEL)
+static NTSTATUS XPF_API
+PdbHelperComputePdbFullFilePath(
     _In_ _Const_ const xpf::StringView<wchar_t>& FileName,
     _In_ _Const_ const xpf::StringView<wchar_t>& PdbGuidAndAge,
-    _In_ _Const_ const xpf::StringView<wchar_t>& PdbDirectoryPath
+    _In_ _Const_ const xpf::StringView<wchar_t>& PdbDirectoryPath,
+    _Out_ xpf::String<wchar_t>* PdbFullFilePath
+) noexcept(true)
+{
+    XPF_MAX_PASSIVE_LEVEL();
+    XPF_DEATH_ON_FAILURE(nullptr != PdbFullFilePath);
+
+    NTSTATUS status = STATUS_UNSUCCESSFUL;
+
+    /* Preinit output. */
+    PdbFullFilePath->Reset();
+
+    /* Helper macro to help build the full file path */
+    #define HELPER_APPEND_DATA_TO_STRING(string, data)          \
+    {                                                           \
+        status = string->Append(data);                          \
+        if (!NT_SUCCESS(status))                                \
+        {                                                       \
+            return status;                                      \
+        }                                                       \
+    }
+
+    /* Construct path. */
+    HELPER_APPEND_DATA_TO_STRING(PdbFullFilePath, PdbDirectoryPath);
+    if (!PdbDirectoryPath.EndsWith(L"\\", false))
+    {
+        HELPER_APPEND_DATA_TO_STRING(PdbFullFilePath, L"\\");
+    }
+    HELPER_APPEND_DATA_TO_STRING(PdbFullFilePath, PdbGuidAndAge);
+    HELPER_APPEND_DATA_TO_STRING(PdbFullFilePath, L"_");
+    HELPER_APPEND_DATA_TO_STRING(PdbFullFilePath, FileName);
+
+    /* Macro no longer needed */
+    #undef HELPER_APPEND_DATA_TO_STRING
+
+    /* All good. */
+    return STATUS_SUCCESS;
+}
+
+/**
+ * @brief       Checks if pdb is available locally, otherwise it downloads the pdb for the given file name.
+ *              The pdb file is saved on disk.
+ *
+ * @param[in]   FileName         - Name of the file for which the pdb is requested.
+ *                                 For example "ntdll"
+ * @param[in]   PdbGuidAndAge    - As there can be multiple ntdll versions, the specific
+ *                                 version is identified by its guid and age.
+ * @param[in]   PdbFullFilePath  - The location where to save the pdb on disk.
+ *
+ * @return      A proper NTSTATUS error code.
+ *              On success, the PdbDirectoryPath/PdbGuidAndAge_FileName.pdb file is created.
+ *
+ * @note        An HTTP request to http://msdl.microsoft.com/download/symbols is performed.
+ * @note        It is recommended to use a system thread for this functionality.
+ *              Leverage work queue or threadpool mechanisms.
+ */
+_Must_inspect_result_
+_IRQL_requires_max_(PASSIVE_LEVEL)
+static NTSTATUS XPF_API
+PdbHelperResolvePdb(
+    _In_ _Const_ const xpf::StringView<wchar_t>& FileName,
+    _In_ _Const_ const xpf::StringView<wchar_t>& PdbGuidAndAge,
+    _In_ _Const_ const xpf::StringView<wchar_t>& PdbFullFilePath
 ) noexcept(true)
 {
     XPF_MAX_PASSIVE_LEVEL();
@@ -269,8 +356,6 @@ PdbHelper::ResolvePdb(
 
     xpf::String<char> ansiFileName;
     xpf::String<char> ansiGuidAndAge;
-
-    xpf::String<wchar_t> fullFilePath;
     HANDLE fileHandle = NULL;
 
     /* Get the ansi name for request. */
@@ -311,19 +396,10 @@ PdbHelper::ResolvePdb(
     HELPER_APPEND_DATA_TO_STRING(url, "/");
     HELPER_APPEND_DATA_TO_STRING(url, ansiFileName.View());
 
-    HELPER_APPEND_DATA_TO_STRING(fullFilePath, PdbDirectoryPath);
-    if (!PdbDirectoryPath.EndsWith(L"\\", false))
-    {
-        HELPER_APPEND_DATA_TO_STRING(fullFilePath, L"\\");
-    }
-    HELPER_APPEND_DATA_TO_STRING(fullFilePath, PdbGuidAndAge);
-    HELPER_APPEND_DATA_TO_STRING(fullFilePath, L"_");
-    HELPER_APPEND_DATA_TO_STRING(fullFilePath, FileName);
-
     #undef HELPER_APPEND_DATA_TO_STRING
 
     /* Check if the pdb is there. */
-    status = KmHelper::File::OpenFile(fullFilePath.View(),
+    status = KmHelper::File::OpenFile(PdbFullFilePath,
                                       KmHelper::File::FileAccessType::kRead,
                                       &fileHandle);
     if (NT_SUCCESS(status))
@@ -336,7 +412,7 @@ PdbHelper::ResolvePdb(
     status = xpf::http::InitiateHttpDownload(url.View(),
                                              headerItems,
                                              XPF_ARRAYSIZE(headerItems),
-                                             response,
+                                             &response,
                                              client);
     if (!NT_SUCCESS(status))
     {
@@ -344,7 +420,7 @@ PdbHelper::ResolvePdb(
     }
 
     /* Open the file and write the first chunk. */
-    status = KmHelper::File::OpenFile(fullFilePath.View(),
+    status = KmHelper::File::OpenFile(PdbFullFilePath,
                                       KmHelper::File::FileAccessType::kWrite,
                                       &fileHandle);
     if (!NT_SUCCESS(status))
@@ -366,7 +442,7 @@ PdbHelper::ResolvePdb(
     {
         /* And keep downloading. */
         status = xpf::http::HttpContinueDownload(client,
-                                                 response,
+                                                 &response,
                                                  &hasMoreData);
         if (!NT_SUCCESS(status))
         {
@@ -386,5 +462,85 @@ PdbHelper::ResolvePdb(
     }
 
     KmHelper::File::CloseFile(&fileHandle);
+    return status;
+}
+
+_Use_decl_annotations_
+NTSTATUS XPF_API
+PdbHelper::ExtractPdbSymbolInformation(
+    _In_ HANDLE FileHandle,
+    _In_ _Const_ const xpf::StringView<wchar_t>& PdbDirectoryPath,
+    _Out_ xpf::Vector<xpf::pdb::SymbolInformation>* Symbols
+) noexcept(true)
+{
+    XPF_MAX_PASSIVE_LEVEL();
+    XPF_DEATH_ON_FAILURE(nullptr != Symbols);
+
+    NTSTATUS status = STATUS_UNSUCCESSFUL;
+    HANDLE pdbFileHandle = NULL;
+
+    PVOID pdbViewBase = NULL;
+    size_t pdbViewSize = 0;
+
+    xpf::String<wchar_t> pdbGuidAndAge;
+    xpf::String<wchar_t> pdbName;
+    xpf::String<wchar_t> pdbFullFilePath;
+
+    /* Preinit output. */
+    Symbols->Clear();
+
+    /* Grab details about pdb. */
+    status = PdbHelperExtractPdbInformationFromFile(FileHandle,
+                                                    &pdbGuidAndAge,
+                                                    &pdbName);
+    if (!NT_SUCCESS(status))
+    {
+        return status;
+    }
+    status = PdbHelperComputePdbFullFilePath(pdbName.View(),
+                                             pdbGuidAndAge.View(),
+                                             PdbDirectoryPath,
+                                             &pdbFullFilePath);
+    if (!NT_SUCCESS(status))
+    {
+        return status;
+    }
+
+    /* Ensure the pdb exists. */
+    status = PdbHelperResolvePdb(pdbName.View(),
+                                 pdbGuidAndAge.View(),
+                                 pdbFullFilePath.View());
+    if (!NT_SUCCESS(status))
+    {
+        return status;
+    }
+
+    /* Map it in memory. */
+    status = KmHelper::File::OpenFile(pdbFullFilePath.View(),
+                                      KmHelper::File::FileAccessType::kRead,
+                                      &pdbFileHandle);
+    if (!NT_SUCCESS(status))
+    {
+        return status;
+    }
+    status = KmHelper::File::MapFileInSystem(pdbFileHandle,
+                                             &pdbViewBase,
+                                             &pdbViewSize);
+    if (!NT_SUCCESS(status))
+    {
+        KmHelper::File::CloseFile(&pdbFileHandle);
+        return status;
+    }
+
+    /* Now extract information. */
+    status = xpf::pdb::ExtractSymbols(pdbViewBase,
+                                      pdbViewSize,
+                                      Symbols);
+
+    /* Close and unmap the file first. */
+    KmHelper::File::UnMapFileInSystem(&pdbViewBase);
+    KmHelper::File::CloseFile(&pdbFileHandle);
+
+    /* Propagate status. */
     return status;
 }

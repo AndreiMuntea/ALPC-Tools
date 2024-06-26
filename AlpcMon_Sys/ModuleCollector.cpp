@@ -1,3 +1,16 @@
+/**
+ * @file        ALPC-Tools/AlpcMon_Sys/ModuleCollector.cpp
+ *
+ * @brief       A structure containing data about modules.
+ *              Such as hash values and exports.
+ *
+ * @author      Andrei-Marius MUNTEA (munteaandrei17@gmail.com)
+ *
+ * @copyright   Copyright © Andrei-Marius MUNTEA 2020-2024.
+ *              All rights reserved.
+ *
+ * @license     See top-level directory LICENSE file.
+ */
 
 #include "precomp.hpp"
 
@@ -40,16 +53,19 @@ class ModuleData final
      *                                   This is the hash of the string defining the path.
      * @param[in,out]   ModuleHash     - The hash of the content of the module.
      * @param[in]       ModuleHashType - The type of hash that was computed.
+     * @param[in,out]   ModuleSymbols  - Extracted modules symbols.
      */
     ModuleData(
         _Inout_ xpf::String<wchar_t>&& ModulePath,
         _In_ uint32_t PathHash,
         _Inout_ xpf::Buffer<>&& ModuleHash,
-        _In_ KmHelper::File::HashType ModuleHashType
+        _In_ KmHelper::File::HashType ModuleHashType,
+        _Inout_ xpf::Vector<xpf::pdb::SymbolInformation>&& ModuleSymbols
     ) noexcept(true) : m_ModulePath{xpf::Move(ModulePath)},
                        m_PathHash{ PathHash },
                        m_ModuleHash{xpf::Move(ModuleHash)},
-                       m_ModuleHashType{ModuleHashType}
+                       m_ModuleHashType{ModuleHashType},
+                       m_ModulesSymbols{xpf::Move(ModuleSymbols)}
     {
         /* Code is paged. */
         XPF_MAX_APC_LEVEL();
@@ -141,6 +157,24 @@ class ModuleData final
     }
 
     /**
+     * @brief   Getter for the modules symbols
+     *
+     * @return  The extracted modules symbols - might be empty if something failed,
+     *          or the pdb was not found.
+     */
+    inline
+    const xpf::Vector<xpf::pdb::SymbolInformation>& XPF_API
+    ModuleSymbols(
+        void
+    ) const noexcept(true)
+    {
+        /* Code is paged. */
+        XPF_MAX_APC_LEVEL();
+
+        return this->m_ModulesSymbols;
+    }
+
+    /**
      * @brief       Checks whether this module is equal to the other one.
      *
      * @param[in]   ModulePath - a view over the string which contains the path of the
@@ -177,6 +211,8 @@ class ModuleData final
 
     xpf::Buffer<> m_ModuleHash;
     KmHelper::File::HashType m_ModuleHashType = KmHelper::File::HashType::kMd5;
+
+    xpf::Vector<xpf::pdb::SymbolInformation> m_ModulesSymbols;
 };  // class ModuleData
 
 /**
@@ -305,6 +341,7 @@ class ModuleCollector final
      *                                   This is the hash of the string defining the path.
      * @param[in,out]   ModuleHash     - The hash of the content of the module.
      * @param[in]       ModuleHashType - The type of hash that was computed.
+     * @param[in]       ModulesSymbols - Extracted symbols information.
      *
      * @return          A proper NTSTATUS error value.
      */
@@ -314,7 +351,8 @@ class ModuleCollector final
         _Inout_ xpf::String<wchar_t>&& ModulePath,
         _In_ uint32_t PathHash,
         _Inout_ xpf::Buffer<>&& ModuleHash,
-        _In_ KmHelper::File::HashType ModuleHashType
+        _In_ KmHelper::File::HashType ModuleHashType,
+        _Inout_ xpf::Vector<xpf::pdb::SymbolInformation>&& ModulesSymbols
     ) noexcept(true)
     {
         /* Code is paged. */
@@ -337,7 +375,8 @@ class ModuleCollector final
         newmodule = xpf::MakeShared<SysMon::ModuleData>(xpf::Move(ModulePath),
                                                         PathHash,
                                                         xpf::Move(ModuleHash),
-                                                        ModuleHashType);
+                                                        ModuleHashType,
+                                                        xpf::Move(ModulesSymbols));
         if (newmodule.IsEmpty())
         {
             return STATUS_INSUFFICIENT_RESOURCES;
@@ -513,6 +552,8 @@ ModuleCollectorWorkerCallback(
     KmHelper::File::HashType hashType = KmHelper::File::HashType::kMd5;
     xpf::Buffer<> hash;
 
+    xpf::Vector<xpf::pdb::SymbolInformation> symbolsInformation;
+
     /* Don't expect this to be null. */
     SysMon::ModuleContext* data = static_cast<SysMon::ModuleContext*>(Argument);
     if (nullptr == data)
@@ -550,23 +591,14 @@ ModuleCollectorWorkerCallback(
     /* If this is a windows module we try to retrieve .pdb information */
     if (data->Path.View().Substring(L"\\Windows\\", false, nullptr))
     {
-        xpf::String<wchar_t> pdbSignatureAndAge;
-        xpf::String<wchar_t> pdbName;
-
-        status = PdbHelper::ExtractPdbInformationFromFile(fileHandle,
-                                                          &pdbSignatureAndAge,
-                                                          &pdbName);
+        status = PdbHelper::ExtractPdbSymbolInformation(fileHandle,
+                                                        L"\\??\\C:\\Symbols\\",
+                                                        &symbolsInformation);
         if (!NT_SUCCESS(status))
         {
-            goto CleanUp;
-        }
-
-        status = PdbHelper::ResolvePdb(pdbName.View(),
-                                       pdbSignatureAndAge.View(),
-                                       L"\\??\\C:\\Symbols\\");
-        if (!NT_SUCCESS(status))
-        {
-            goto CleanUp;
+            /* Non critical - we simply won't have symbols for this module. */
+            symbolsInformation.Clear();
+            status = STATUS_SUCCESS;
         }
     }
 
@@ -575,7 +607,8 @@ ModuleCollectorWorkerCallback(
     status = gModuleCollector->Insert(xpf::Move(data->Path),
                                       modulePathHash,
                                       xpf::Move(hash),
-                                      hashType);
+                                      hashType,
+                                      xpf::Move(symbolsInformation));
     if (!NT_SUCCESS(status))
     {
         goto CleanUp;
@@ -586,7 +619,7 @@ CleanUp:
     gModuleCollector->DestroyModuleContext(data);
 }
 
-static VOID XPF_API
+static void XPF_API
 ModuleCollectorCacheNewModule(
     _In_ _Const_ const xpf::StringView<wchar_t>& ModulePath
 )
@@ -656,7 +689,7 @@ ModuleCollectorDestroy(
 }
 
 _Use_decl_annotations_
-VOID XPF_API
+void XPF_API
 ModuleCollectorHandleNewModule(
     _In_ _Const_ const xpf::StringView<wchar_t>& ModulePath
 ) noexcept(true)

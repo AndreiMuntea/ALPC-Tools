@@ -18,6 +18,8 @@
 #include "Events.hpp"
 #include "globals.hpp"
 
+#include "ProcessCollector.hpp"
+
 #include "ProcessFilter.hpp"
 #include "trace.hpp"
 
@@ -180,6 +182,20 @@ ProcessFilterProcessNotifyRoutineCallback(
             return;
         }
 
+        //
+        // Add item to collector for caching, done before dispatching the event,
+        // as listener might query some extra dara about the process.
+        // So we need to have it available.
+        //
+        // Q - should process collector register to process create event instead?
+        //     this way we'll decouple the filter from the collector.
+        //
+        ProcessCollectorHandleCreateProcess(HandleToUlong(ProcessId),
+                                            processPath);
+
+        //
+        // And dispatch event.
+        //
         status = SysMon::ProcessCreateEvent::Create(broadcastEvent,
                                                     HandleToUlong(ProcessId),
                                                     architecture,
@@ -187,6 +203,13 @@ ProcessFilterProcessNotifyRoutineCallback(
         if (!NT_SUCCESS(status))
         {
             SysMonLogWarning("SysMon::ProcessCreateEvent::Create failed with status %!STATUS!",
+                             status);
+            return;
+        }
+        status = GlobalDataGetBusInstance()->Dispatch(broadcastEvent.Get());
+        if (!NT_SUCCESS(status))
+        {
+            SysMonLogWarning("Dispatch failed with status %!STATUS!",
                              status);
             return;
         }
@@ -211,20 +234,24 @@ ProcessFilterProcessNotifyRoutineCallback(
                              status);
             return;
         }
-    }
+        status = GlobalDataGetBusInstance()->Dispatch(broadcastEvent.Get());
+        if (!NT_SUCCESS(status))
+        {
+            SysMonLogWarning("Dispatch failed with status %!STATUS!",
+                             status);
+            return;
+        }
 
-    //
-    // Dispatch synchronously (either create, either terminate).
-    //
-    status = GlobalDataGetBusInstance()->Dispatch(broadcastEvent.Get());
-    if (!NT_SUCCESS(status))
-    {
-        SysMonLogWarning("Dispatch failed with status %!STATUS!",
-                         status);
-        return;
+        //
+        // Remove the process from collector - done after dispatching terminate,
+        // as listeners might want to query extra data on the event.
+        //
+        // Q - should process collector register to process terminate event instead?
+        //     this way we'll decouple the filter from the collector.
+        //
+        ProcessCollectorHandleTerminateProcess(HandleToULong(ProcessId));
     }
 }
-
 
 //
 // -------------------------------------------------------------------------------------------------------------------
