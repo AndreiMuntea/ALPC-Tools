@@ -149,7 +149,7 @@ class ProcessCreateEvent final : public xpf::IEvent
     _Must_inspect_result_
     static NTSTATUS XPF_API
     Create(
-        _Inout_ xpf::UniquePointer<xpf::IEvent>& Event,
+        _Inout_ xpf::UniquePointer<xpf::IEvent, xpf::SplitAllocator>& Event,
         _In_ uint32_t ProcessPid,
         _In_ const SysMon::ProcessArchitecture& ProcessArchitecture,
         _In_ _Const_ const xpf::StringView<wchar_t> ProcessPath
@@ -173,7 +173,7 @@ class ProcessCreateEvent final : public xpf::IEvent
      *
      * @return  The path of the process which is created.
      */
-    inline const xpf::String<wchar_t>& XPF_API
+    inline const xpf::String<wchar_t, xpf::SplitAllocator>& XPF_API
     ProcessPath(
         void
     ) const noexcept(true)
@@ -196,7 +196,7 @@ class ProcessCreateEvent final : public xpf::IEvent
 
  private:
      uint32_t m_ProcessPid = 0;
-     xpf::String<wchar_t> m_ProcessPath;
+     xpf::String<wchar_t, xpf::SplitAllocator> m_ProcessPath;
      SysMon::ProcessArchitecture m_ProcessArchitecture = SysMon::ProcessArchitecture::MAX;
 
      /**
@@ -263,7 +263,7 @@ class ProcessTerminateEvent final : public xpf::IEvent
     _Must_inspect_result_
     static NTSTATUS XPF_API
     Create(
-        _Inout_ xpf::UniquePointer<xpf::IEvent>& Event,
+        _Inout_ xpf::UniquePointer<xpf::IEvent, xpf::SplitAllocator>& Event,
         _In_ uint32_t ProcessPid
     ) noexcept(true);
 
@@ -356,7 +356,7 @@ class ImageLoadEvent final : public xpf::IEvent
     _Must_inspect_result_
     static NTSTATUS XPF_API
     Create(
-        _Inout_ xpf::UniquePointer<xpf::IEvent>& Event,
+        _Inout_ xpf::UniquePointer<xpf::IEvent, xpf::SplitAllocator>& Event,
         _In_ uint32_t ProcessPid,
         _In_ _Const_ const xpf::StringView<wchar_t>& ImagePath,
         _In_ bool IsKernelImage,
@@ -382,7 +382,7 @@ class ImageLoadEvent final : public xpf::IEvent
      *
      * @return  The path of the image which is loaded.
      */
-    inline const xpf::String<wchar_t>& XPF_API
+    inline const xpf::String<wchar_t, xpf::SplitAllocator>& XPF_API
     ImagePath(
         void
     ) const noexcept(true)
@@ -431,7 +431,7 @@ class ImageLoadEvent final : public xpf::IEvent
 
  private:
      uint32_t m_ProcessPid = 0;
-     xpf::String<wchar_t> m_ImagePath;
+     xpf::String<wchar_t, xpf::SplitAllocator> m_ImagePath;
      bool m_IsKernelImage = false;
      void* m_ImageBase = nullptr;
      size_t m_ImageSize = 0;
@@ -503,7 +503,7 @@ class ThreadCreateEvent final : public xpf::IEvent
     _Must_inspect_result_
     static NTSTATUS XPF_API
     Create(
-        _Inout_ xpf::UniquePointer<xpf::IEvent>& Event,
+        _Inout_ xpf::UniquePointer<xpf::IEvent, xpf::SplitAllocator>& Event,
         _In_ uint32_t ProcessPid,
         _In_ uint32_t ThreadTid
     ) noexcept(true);
@@ -604,7 +604,7 @@ class ThreadTerminateEvent final : public xpf::IEvent
     _Must_inspect_result_
     static NTSTATUS XPF_API
     Create(
-        _Inout_ xpf::UniquePointer<xpf::IEvent>& Event,
+        _Inout_ xpf::UniquePointer<xpf::IEvent, xpf::SplitAllocator>& Event,
         _In_ uint32_t ProcessPid,
         _In_ uint32_t ThreadTid
     ) noexcept(true);
@@ -709,7 +709,7 @@ class UmHookEvent final : public xpf::IEvent
     _Must_inspect_result_
     static NTSTATUS XPF_API
     Create(
-        _Inout_ xpf::UniquePointer<xpf::IEvent>& Event,
+        _Inout_ xpf::UniquePointer<xpf::IEvent, xpf::SplitAllocator>& Event,
         _In_ void* UmHookMessage
     ) noexcept(true);
 

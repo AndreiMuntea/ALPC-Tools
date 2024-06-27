@@ -145,7 +145,7 @@ ProcessFilterProcessNotifyRoutineCallback(
 
     NTSTATUS status = STATUS_UNSUCCESSFUL;
     xpf::StringView<wchar_t> processPath;
-    xpf::UniquePointer<xpf::IEvent> broadcastEvent;
+    xpf::UniquePointer<xpf::IEvent, xpf::SplitAllocator> broadcastEvent;
     SysMon::ProcessArchitecture architecture = SysMon::ProcessArchitecture::MAX;
 
     if constexpr (SysMon::CurrentOsArchitecture() == SysMon::OsArchitecture::ix86)

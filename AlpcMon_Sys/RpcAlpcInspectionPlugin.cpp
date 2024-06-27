@@ -50,20 +50,20 @@ XPF_SECTION_PAGED;
 _Use_decl_annotations_
 NTSTATUS XPF_API
 SysMon::RpcAlpcInspectionPlugin::Create(
-    _Inout_ xpf::SharedPointer<SysMon::IPlugin, xpf::CriticalMemoryAllocator>& Plugin,
+    _Inout_ xpf::SharedPointer<SysMon::IPlugin, xpf::SplitAllocatorCritical>& Plugin,
     _In_ const uint64_t& PluginId
 ) noexcept(true)
 {
     XPF_MAX_PASSIVE_LEVEL();
 
-    xpf::SharedPointer<SysMon::RpcAlpcInspectionPlugin, xpf::CriticalMemoryAllocator> plugin;
+    xpf::SharedPointer<SysMon::RpcAlpcInspectionPlugin, xpf::SplitAllocatorCritical> plugin;
 
     SysMonLogInfo("Creating RpcAlpcInspectionPlugin...");
 
     //
     // First create the plugin.
     //
-    plugin = xpf::MakeShared<SysMon::RpcAlpcInspectionPlugin, xpf::CriticalMemoryAllocator>(PluginId);
+    plugin = xpf::MakeShared<SysMon::RpcAlpcInspectionPlugin, xpf::SplitAllocatorCritical>(PluginId);
     if (plugin.IsEmpty())
     {
         SysMonLogError("Insufficient resources to create the plugin");
@@ -76,7 +76,7 @@ SysMon::RpcAlpcInspectionPlugin::Create(
     //
     Plugin = xpf::DynamicSharedPointerCast<SysMon::IPlugin,
                                            SysMon::RpcAlpcInspectionPlugin,
-                                           xpf::CriticalMemoryAllocator>(xpf::Move(plugin));
+                                           xpf::SplitAllocatorCritical>(xpf::Move(plugin));
     if (Plugin.IsEmpty())
     {
         SysMonLogError("Insufficient resources to cast the plugin");

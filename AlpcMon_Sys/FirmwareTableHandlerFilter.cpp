@@ -88,7 +88,7 @@ FirmwareTableHandlerCallback(
     //
     // Create and dispatch the event - ignore any potential failures.
     //
-    xpf::UniquePointer<xpf::IEvent> broadcastEvent;
+    xpf::UniquePointer<xpf::IEvent, xpf::SplitAllocator> broadcastEvent;
     NTSTATUS status = SysMon::UmHookEvent::Create(broadcastEvent,
                                                   TableInfo);
     if (NT_SUCCESS(status))

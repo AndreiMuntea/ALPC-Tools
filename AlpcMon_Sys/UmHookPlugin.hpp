@@ -118,7 +118,7 @@ class UmHookPlugin final : public IPlugin
     _Must_inspect_result_
     static NTSTATUS XPF_API
     Create(
-        _Inout_ xpf::SharedPointer<SysMon::IPlugin, xpf::CriticalMemoryAllocator>& Plugin,
+        _Inout_ xpf::SharedPointer<SysMon::IPlugin, xpf::SplitAllocatorCritical>& Plugin,
         _In_ const uint64_t& PluginId
     ) noexcept(true);
 
@@ -215,7 +215,7 @@ class UmHookPlugin final : public IPlugin
      /**
       * @brief  Holds the state for all processes.
       */
-     xpf::Vector<SysMon::UmInjectionDllData> m_ProcessData;
+     xpf::Vector<SysMon::UmInjectionDllData, xpf::SplitAllocator> m_ProcessData;
      /**
       * @brief  Guards the process data.
       */
@@ -229,11 +229,11 @@ class UmHookPlugin final : public IPlugin
      /**
       * @brief  The full DOS path of the win32 injection dll. 
       */
-     xpf::String<wchar_t> m_UmDllWin32Path;
+     xpf::String<wchar_t, xpf::SplitAllocator> m_UmDllWin32Path;
      /**
       * @brief  The full DOS path of the x64 injection dll. 
       */
-     xpf::String<wchar_t> m_UmDllX64Path;
+     xpf::String<wchar_t, xpf::SplitAllocator> m_UmDllX64Path;
 
      /**
       * @brief   Default MemoryAllocator is our friend as it requires access to the private

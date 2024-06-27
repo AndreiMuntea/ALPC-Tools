@@ -34,7 +34,7 @@ namespace DceNdr
   *              of the messages. If you only want to DESERIALIZE, well known messages, an ordinary allocator
   *              is more than enough.
   */
-using DceAllocator = xpf::MemoryAllocator;
+using DceAllocator = xpf::SplitAllocator;
 
 /**
  * @brief   This class is used to store serialized data.

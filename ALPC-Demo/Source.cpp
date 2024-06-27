@@ -786,6 +786,14 @@ wmain(
     XPF_UNREFERENCED_PARAMETER(ArgumentsCount);
     XPF_UNREFERENCED_PARAMETER(Arguments);
 
+    NTSTATUS status = xpf::SplitAllocatorInitializeSupport();
+    if (!NT_SUCCESS(status))
+    {
+        printf("Failed to initialize Split Allocator support to reduce memory pressure! status = 0x%x \r\n",
+               status);
+        return -1;
+    }
+
     CommandPrintHelp();
 
     while (true)
@@ -827,5 +835,6 @@ wmain(
         }
     }
 
+    xpf::SplitAllocatorDeinitializeSupport();
     return 0;
 }

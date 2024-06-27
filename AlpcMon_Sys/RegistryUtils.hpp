@@ -45,6 +45,6 @@ WrapperRegistryQueryValueKey(
     _In_ _Const_ const xpf::StringView<wchar_t>& KeyName,
     _In_ _Const_ const xpf::StringView<wchar_t>& ValueName,
     _In_ uint32_t Type,
-    _Out_ xpf::Buffer<xpf::CriticalMemoryAllocator>* OutBuffer
+    _Out_ xpf::Buffer<xpf::SplitAllocatorCritical>* OutBuffer
 ) noexcept(true);
 };  // namespace KmHelper

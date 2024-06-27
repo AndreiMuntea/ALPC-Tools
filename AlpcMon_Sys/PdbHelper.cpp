@@ -125,8 +125,8 @@ _IRQL_requires_max_(PASSIVE_LEVEL)
 static NTSTATUS XPF_API
 PdbHelperExtractPdbInformationFromFile(
     _In_ HANDLE FileHandle,
-    _Out_ xpf::String<wchar_t>* PdbGuidAndAge,
-    _Out_ xpf::String<wchar_t>* PdbName
+    _Out_ xpf::String<wchar_t, xpf::SplitAllocator>* PdbGuidAndAge,
+    _Out_ xpf::String<wchar_t, xpf::SplitAllocator>* PdbName
 ) noexcept(true)
 {
     XPF_MAX_PASSIVE_LEVEL();
@@ -146,6 +146,8 @@ PdbHelperExtractPdbInformationFromFile(
     UNICODE_STRING ustrBuffer = { 0 };
     xpf::StringView<wchar_t> bufferView;
     xpf::StringView<char> pdbName;
+
+    xpf::String<wchar_t> widePdbName;
 
     /* The buffer we'll be using for printing data. */
     ::RtlInitEmptyUnicodeString(&ustrBuffer,
@@ -249,7 +251,13 @@ PdbHelperExtractPdbInformationFromFile(
     }
 
     status = xpf::StringConversion::UTF8ToWide(pdbName,
-                                               *PdbName);
+                                               widePdbName);
+    if (!NT_SUCCESS(status))
+    {
+        goto CleanUp;
+    }
+
+    status = PdbName->Append(widePdbName.View());
     if (!NT_SUCCESS(status))
     {
         goto CleanUp;
@@ -283,7 +291,7 @@ PdbHelperComputePdbFullFilePath(
     _In_ _Const_ const xpf::StringView<wchar_t>& FileName,
     _In_ _Const_ const xpf::StringView<wchar_t>& PdbGuidAndAge,
     _In_ _Const_ const xpf::StringView<wchar_t>& PdbDirectoryPath,
-    _Out_ xpf::String<wchar_t>* PdbFullFilePath
+    _Out_ xpf::String<wchar_t, xpf::SplitAllocator>* PdbFullFilePath
 ) noexcept(true)
 {
     XPF_MAX_PASSIVE_LEVEL();
@@ -349,9 +357,9 @@ PdbHelperResolvePdb(
 {
     XPF_MAX_PASSIVE_LEVEL();
 
-    xpf::String<char> url;
+    xpf::String<char, xpf::SplitAllocator> url;
     xpf::http::HttpResponse response;
-    xpf::SharedPointer<xpf::IClient> client;
+    xpf::SharedPointer<xpf::IClient, xpf::SplitAllocator> client;
     NTSTATUS status = STATUS_UNSUCCESSFUL;
 
     xpf::String<char> ansiFileName;
@@ -470,7 +478,7 @@ NTSTATUS XPF_API
 PdbHelper::ExtractPdbSymbolInformation(
     _In_ HANDLE FileHandle,
     _In_ _Const_ const xpf::StringView<wchar_t>& PdbDirectoryPath,
-    _Out_ xpf::Vector<xpf::pdb::SymbolInformation>* Symbols
+    _Out_ xpf::Vector<xpf::pdb::SymbolInformation, xpf::SplitAllocator>* Symbols
 ) noexcept(true)
 {
     XPF_MAX_PASSIVE_LEVEL();
@@ -482,9 +490,9 @@ PdbHelper::ExtractPdbSymbolInformation(
     PVOID pdbViewBase = NULL;
     size_t pdbViewSize = 0;
 
-    xpf::String<wchar_t> pdbGuidAndAge;
-    xpf::String<wchar_t> pdbName;
-    xpf::String<wchar_t> pdbFullFilePath;
+    xpf::String<wchar_t, xpf::SplitAllocator> pdbGuidAndAge;
+    xpf::String<wchar_t, xpf::SplitAllocator> pdbName;
+    xpf::String<wchar_t, xpf::SplitAllocator> pdbFullFilePath;
 
     /* Preinit output. */
     Symbols->Clear();

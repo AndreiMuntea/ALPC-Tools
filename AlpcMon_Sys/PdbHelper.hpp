@@ -37,7 +37,7 @@ NTSTATUS XPF_API
 ExtractPdbSymbolInformation(
     _In_ HANDLE FileHandle,
     _In_ _Const_ const xpf::StringView<wchar_t>& PdbDirectoryPath,
-    _Out_ xpf::Vector<xpf::pdb::SymbolInformation>* Symbols
+    _Out_ xpf::Vector<xpf::pdb::SymbolInformation, xpf::SplitAllocator>* Symbols
 ) noexcept(true);
 
 };  // namespace PdbHelper

@@ -1459,7 +1459,7 @@ class DceUniDimensionalPointerArray final : public DceSerializableObject
          for (size_t i = 0; i < referentArray.Size(); ++i)
          {
              Type element{};
-             xpf::SharedPointer<Type> ptrElement;
+             xpf::SharedPointer<Type, DceAllocator> ptrElement;
 
              if (referentArray[i].Data() != nullptr)
              {

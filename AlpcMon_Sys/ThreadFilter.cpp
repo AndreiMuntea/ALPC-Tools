@@ -147,7 +147,7 @@ ThreadFilterThreadNotifyRoutineCallback(
     XPF_MAX_APC_LEVEL();
 
     NTSTATUS status = STATUS_UNSUCCESSFUL;
-    xpf::UniquePointer<xpf::IEvent> broadcastEvent;
+    xpf::UniquePointer<xpf::IEvent, xpf::SplitAllocator> broadcastEvent;
 
     HANDLE currentProcessPid = ::PsGetCurrentProcessId();
     HANDLE currentThreadTid = ::PsGetCurrentThreadId();

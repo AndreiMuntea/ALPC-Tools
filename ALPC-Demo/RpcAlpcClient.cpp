@@ -150,7 +150,7 @@ class DceNdrEpmTower final : public DceSerializableObject
      {
          XPF_MAX_PASSIVE_LEVEL();
 
-         xpf::Vector<uint8_t> rawData;
+         xpf::Vector<uint8_t, DceAllocator> rawData;
          xpf::String<wchar_t> endpoint;
 
          LRPC_EPM_TOWER* tower = nullptr;
@@ -170,7 +170,7 @@ class DceNdrEpmTower final : public DceSerializableObject
          if (!rawData.IsEmpty())
          {
              tower = reinterpret_cast<LRPC_EPM_TOWER*>(xpf::AddressOf(rawData[0]));
-             xpf::String<char> ansiEndpoint;
+             xpf::String<char, DceAllocator> ansiEndpoint;
 
              status = ansiEndpoint.Append("\\RPC Control\\");
              if (!NT_SUCCESS(status))
@@ -231,10 +231,10 @@ BindToInterface(
     LRPC_BIND_MESSAGE bindMessageReq = { 0 };
     LRPC_BIND_MESSAGE bindMessageAns = { 0 };
 
-    xpf::Buffer<xpf::MemoryAllocator> output;
+    xpf::Buffer<xpf::SplitAllocator> output;
     xpf::StreamReader outputStream{ output };
 
-    xpf::Buffer<xpf::MemoryAllocator> viewOutput;
+    xpf::Buffer<xpf::SplitAllocator> viewOutput;
 
     BindId = xpf::ApiAtomicIncrement(&gCrtInterfaceBinding);
 
@@ -318,14 +318,14 @@ CallMethod(
     LRPC_RESPONSE_MESSAGE ansMessage = { 0 };
     LRPC_FAULT_MESSAGE faultMessage = { 0 };
 
-    xpf::Buffer<xpf::MemoryAllocator> requestBuffer;
+    xpf::Buffer<xpf::SplitAllocator> requestBuffer;
     xpf::StreamWriter requestBufferWriter{ requestBuffer };
     size_t requestSize = 0;
 
-    xpf::Buffer<xpf::MemoryAllocator> responseBuffer;
+    xpf::Buffer<xpf::SplitAllocator> responseBuffer;
     xpf::StreamReader responseBufferReader{ responseBuffer };
 
-    xpf::Buffer<xpf::MemoryAllocator> viewResponseBuffer;
+    xpf::Buffer<xpf::SplitAllocator> viewResponseBuffer;
     xpf::StreamReader viewResponseBufferReader{ viewResponseBuffer };
 
     //
@@ -409,7 +409,7 @@ CallMethod(
     // And now capture the output - we have two cases - when the output is in a view,
     // and when it is continous memory.
     //
-    xpf::Buffer<xpf::MemoryAllocator> ndrOutParameters;
+    xpf::Buffer<DceAllocator> ndrOutParameters;
 
     if (ansMessage.Flags & LRPC_RESPONSE_FLAG_VIEW_PRESENT)
     {
