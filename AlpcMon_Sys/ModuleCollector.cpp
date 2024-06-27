@@ -256,6 +256,7 @@ class ModuleCollector final
         XPF_MAX_APC_LEVEL();
 
         /* The queue must be ran down before destroying other members. */
+        this->m_IsQueueRunDown = true;
         this->m_ModulesWorkQueue.Reset();
     }
 
@@ -508,11 +509,30 @@ class ModuleCollector final
         return (*this->m_ModulesWorkQueue);
     }
 
+    /**
+     * @brief   Checks if queue is running down - useful for early bailing when
+     *          there are items enqueued left.
+     *
+     * @return  true if queue is running down, false otherwise.
+     */
+    inline bool
+    XPF_API
+    IsQueueRunDown(
+        void
+    ) noexcept(true)
+    {
+        /* Code is paged. */
+        XPF_MAX_APC_LEVEL();
+
+        return this->m_IsQueueRunDown;
+    }
+
  private:
     xpf::Optional<xpf::ReadWriteLock> m_ModulesLock;
     xpf::Vector<xpf::SharedPointer<SysMon::ModuleData>> m_Modules;
     xpf::LookasideListAllocator m_ModuleContextAllocator;
     xpf::Optional<KmHelper::WorkQueue> m_ModulesWorkQueue;
+    bool m_IsQueueRunDown = false;
 
     /**
      * @brief   Default MemoryAllocator is our friend as it requires access to the private
@@ -560,6 +580,13 @@ ModuleCollectorWorkerCallback(
     {
         XPF_ASSERT(false);
         return;
+    }
+
+    /* If queue is running down, we need to bail. Fast as we are unloading. */
+    /* This check is done before expensive operations. */
+    if (gModuleCollector->IsQueueRunDown())
+    {
+        goto CleanUp;
     }
 
     /* Hash the string path. */

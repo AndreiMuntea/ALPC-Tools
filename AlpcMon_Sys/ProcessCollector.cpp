@@ -163,9 +163,10 @@ class ProcessModuleData final
  */
 class ProcessData final
 {
- public:
+ private:
    /**
-    * @brief       The constructor for ProcessData.
+    * @brief           The constructor for ProcessData. Private because
+    *                  Create method is intended to be used.
     *
     * @param[in,out]   ProcessPath - the path of the started process.
     * @param[in]       ProcessId   - the id of the started process.
@@ -174,7 +175,7 @@ class ProcessData final
         _Inout_ xpf::String<wchar_t>&& ProcessPath,
         _In_ const uint32_t& ProcessId
     ) noexcept(true) : m_ProcessPath{xpf::Move(ProcessPath)},
-                    m_ProcessId{ProcessId}
+                       m_ProcessId{ProcessId}
     {
         /* Code is paged. */
         XPF_MAX_APC_LEVEL();
@@ -187,6 +188,7 @@ class ProcessData final
         XPF_DEATH_ON_FAILURE(ProcessId % 4 == 0);
     }
 
+ public:
     /**
      * @brief  Default destructor.
      */
@@ -202,6 +204,43 @@ class ProcessData final
      * @brief   Move behavior is allowed.
      */
     XPF_CLASS_MOVE_BEHAVIOR(SysMon::ProcessData, default);
+
+   /**
+    * @brief           The constructor for ProcessData. Private because
+    *                  Create method is intended to be used.
+    *
+    * @param[in,out]   ProcessPath - the path of the started process.
+    * @param[in]       ProcessId   - the id of the started process.
+    *
+    * @return          A properly initialized shared pointer with Process data.
+    *                  Empty shared pointer on failure.
+    */
+    static xpf::SharedPointer<SysMon::ProcessData> XPF_API
+    Create(
+        _Inout_ xpf::String<wchar_t>&& ProcessPath,
+        _In_ const uint32_t& ProcessId
+    ) noexcept(true)
+    {
+        /* Code is paged. */
+        XPF_MAX_APC_LEVEL();
+
+        NTSTATUS status = STATUS_UNSUCCESSFUL;
+        xpf::SharedPointer<SysMon::ProcessData> result;
+
+        result = xpf::MakeShared<SysMon::ProcessData>(xpf::Move(ProcessPath),
+                                                      ProcessId);
+        if (result.IsEmpty())
+        {
+            return result;
+        }
+
+        status = xpf::ReadWriteLock::Create(xpf::AddressOf(result.Get()->m_LoadedModulesLock));
+        if (!NT_SUCCESS(status))
+        {
+            result.Reset();
+        }
+        return result;
+    }
 
     /**
      * @brief   Inserts a new module in the list of loaded modules.
@@ -242,6 +281,9 @@ class ProcessData final
         SysMon::ProcessModuleData moduleData{ xpf::Move(modulePath),
                                               ModuleBase,
                                               ModuleSize };
+
+        /* We're touching the modules so acquire exclusively. */
+        xpf::ExclusiveLockGuard guard{ *this->m_LoadedModulesLock };
 
         /* Before insertion we erase all modules which may overlap. */
         for (size_t i = 0; i < this->m_LoadedModules.Size();)
@@ -301,7 +343,15 @@ class ProcessData final
  private:
     uint32_t m_ProcessId = 0;
     xpf::String<wchar_t> m_ProcessPath;
+
+    xpf::Optional<xpf::ReadWriteLock> m_LoadedModulesLock;
     xpf::Vector<SysMon::ProcessModuleData> m_LoadedModules;
+
+    /**
+     * @brief   This is a friend class as it needs access so it can properly initialize
+     *          the object so we won't return partially constructed objects.
+     */
+    friend class xpf::MemoryAllocator;
 };  // class ProcessData
 
 /**
@@ -429,6 +479,14 @@ class ProcessCollector final
             return status;
         }
 
+        /* Create a shared pointer structure. */
+        xpf::SharedPointer<SysMon::ProcessData> process = SysMon::ProcessData::Create(xpf::Move(processPath),
+                                                                                      ProcessId);
+        if (process.IsEmpty())
+        {
+            return STATUS_INSUFFICIENT_RESOURCES;
+        }
+
         /* Exclusive because we're editing the processees list. */
         xpf::ExclusiveLockGuard guard{ *this->m_ProcessesLock };
 
@@ -444,18 +502,18 @@ class ProcessCollector final
         }
 
         /* Emplace the new process. */
-        status = this->m_Processes.Emplace(xpf::Move(processPath),
-                                           ProcessId);
+        status = this->m_Processes.Emplace(xpf::Move(process));
         if (!NT_SUCCESS(status))
         {
             return status;
         }
 
         /* Keep it sorted. */
-        this->m_Processes.Sort([&](const SysMon::ProcessData& Left, const SysMon::ProcessData& Right)
+        this->m_Processes.Sort([&](const xpf::SharedPointer<SysMon::ProcessData>& Left,
+                                   const xpf::SharedPointer<SysMon::ProcessData>& Right)
                                {
                                     XPF_MAX_PASSIVE_LEVEL();
-                                    return Left.ProcessId() < Right.ProcessId();
+                                    return Left.Get()->ProcessId() < Right.Get()->ProcessId();
                                });
         return STATUS_SUCCESS;
     }
@@ -511,18 +569,17 @@ class ProcessCollector final
         /* On image load :) */
         XPF_MAX_PASSIVE_LEVEL();
 
-        /* Exclusive because we're editing the modules list - not ideal should be guarded by its own lock? */
-        xpf::ExclusiveLockGuard guard{ *this->m_ProcessesLock };
-        const xpf::Optional<size_t> existingProcessIndex = this->FindProcessIndex(ProcessPid);
-        if (!existingProcessIndex.HasValue())
+        /* Lookup the process. */
+        xpf::SharedPointer<SysMon::ProcessData> process = this->LookupProcessData(ProcessPid);
+        if (process.IsEmpty())
         {
             return STATUS_NOT_FOUND;
         }
 
         /* Associate the module with the process. */
-        return this->m_Processes[(*existingProcessIndex)].InsertNewModule(ModulePath,
-                                                                          ModuleBase,
-                                                                          ModuleSize);
+        return process.Get()->InsertNewModule(ModulePath,
+                                              ModuleBase,
+                                              ModuleSize);
     }
 
  private:
@@ -555,12 +612,12 @@ class ProcessCollector final
          while (lo <= hi)
          {
              size_t mid = lo + ((hi - lo) / 2);
-             if (this->m_Processes[mid].ProcessId() == ProcessId)
+             if (this->m_Processes[mid].Get()->ProcessId() == ProcessId)
              {
                  index.Emplace(mid);
                  break;
              }
-             else if (this->m_Processes[mid].ProcessId() < ProcessId)
+             else if (this->m_Processes[mid].Get()->ProcessId() < ProcessId)
              {
                  lo = mid + 1;
              }
@@ -577,9 +634,38 @@ class ProcessCollector final
          return index;
      }
 
+     /**
+      * @brief      Uses FindProcessIndex to map a process id to its position in the vector.
+      *             The m_ProcessesLock must NOT be taken - this function will acquire it.
+      *
+      * @param[in]  ProcessId - The process id to be searched.
+      *
+      * @return     The shared pointer describing the process. Empty if not found.
+      */
+     inline
+     xpf::SharedPointer<SysMon::ProcessData> XPF_API
+     LookupProcessData(
+         _In_ _Const_ const uint32_t& ProcessId
+     )
+     {
+         XPF_MAX_APC_LEVEL();
+         xpf::SharedPointer<SysMon::ProcessData> result;
+         xpf::Optional<size_t> index;
+
+         /* Shared guard because we're just doing a lookup for the process data. */
+         xpf::SharedLockGuard guard{ *this->m_ProcessesLock };
+         index = this->FindProcessIndex(ProcessId);
+         if (index.HasValue())
+         {
+             result = this->m_Processes[(*index)];
+         }
+
+         return result;
+     }
+
  private:
     xpf::Optional<xpf::ReadWriteLock> m_ProcessesLock;
-    xpf::Vector<SysMon::ProcessData> m_Processes;
+    xpf::Vector<xpf::SharedPointer<SysMon::ProcessData>> m_Processes;
 
     /**
      * @brief   This is a friend class as it needs access so it can properly initialize

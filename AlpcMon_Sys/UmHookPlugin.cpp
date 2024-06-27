@@ -480,7 +480,7 @@ HelperUmHookPluginInject(
     // We need a clone here so we don't force the UM plugin to keep a reference.
     //
     copy = static_cast<SysMon::UmInjectionDllData*>(
-                                xpf::CriticalMemoryAllocator::AllocateMemory(sizeof(SysMon::UmInjectionDllData)));
+           xpf::CriticalMemoryAllocator::AllocateMemory(sizeof(SysMon::UmInjectionDllData)));
     if (nullptr == copy)
     {
         SysMonLogError("Could not clone UmInjectionDllData");

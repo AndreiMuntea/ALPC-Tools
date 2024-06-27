@@ -117,7 +117,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <LanguageStandard_C>stdc17</LanguageStandard_C>
-      <PreprocessorDefinitions>TMH_FILE=%(FileName)%(Extension).tmh;POOL_NX_OPTIN;POOL_ZERO_DOWN_LEVEL_SUPPORT;_X86_=1;i386=1;STD_CALL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>TMH_FILE=%(FileName)%(Extension).tmh;POOL_NX_OPTIN=1;POOL_ZERO_DOWN_LEVEL_SUPPORT=1;_X86_=1;i386=1;STD_CALL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <AdditionalIncludeDirectories>$(SolutionDir)\submodules\XPlatform-MiniLib;$(SolutionDir)\AlpcMon_Dll;$(SolutionDir)\Alpc-Demo;$(IntDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -176,7 +176,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
       <LanguageStandard_C>stdc17</LanguageStandard_C>
-      <PreprocessorDefinitions>TMH_FILE=%(FileName)%(Extension).tmh;POOL_NX_OPTIN;POOL_ZERO_DOWN_LEVEL_SUPPORT;_X86_=1;i386=1;STD_CALL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>TMH_FILE=%(FileName)%(Extension).tmh;POOL_NX_OPTIN=1;POOL_ZERO_DOWN_LEVEL_SUPPORT=1;_X86_=1;i386=1;STD_CALL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <AdditionalIncludeDirectories>$(SolutionDir)\submodules\XPlatform-MiniLib;$(SolutionDir)\AlpcMon_Dll;$(SolutionDir)\Alpc-Demo;$(IntDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -234,7 +234,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <LanguageStandard_C>stdc17</LanguageStandard_C>
-      <PreprocessorDefinitions>TMH_FILE=%(FileName)%(Extension).tmh;POOL_NX_OPTIN;POOL_ZERO_DOWN_LEVEL_SUPPORT;_WIN64;_AMD64_;AMD64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>TMH_FILE=%(FileName)%(Extension).tmh;POOL_NX_OPTIN=1;POOL_ZERO_DOWN_LEVEL_SUPPORT=1;_WIN64;_AMD64_;AMD64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <AdditionalIncludeDirectories>$(SolutionDir)\submodules\XPlatform-MiniLib;$(SolutionDir)\AlpcMon_Dll;$(SolutionDir)\Alpc-Demo;$(IntDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -294,7 +294,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
       <LanguageStandard_C>stdc17</LanguageStandard_C>
-      <PreprocessorDefinitions>TMH_FILE=%(FileName)%(Extension).tmh;POOL_NX_OPTIN;POOL_ZERO_DOWN_LEVEL_SUPPORT;_WIN64;_AMD64_;AMD64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>TMH_FILE=%(FileName)%(Extension).tmh;POOL_NX_OPTIN=1;POOL_ZERO_DOWN_LEVEL_SUPPORT=1;_WIN64;_AMD64_;AMD64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <AdditionalIncludeDirectories>$(SolutionDir)\submodules\XPlatform-MiniLib;$(SolutionDir)\AlpcMon_Dll;$(SolutionDir)\Alpc-Demo;$(IntDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>

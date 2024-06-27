@@ -83,7 +83,7 @@ KmHelper::WorkQueue::~WorkQueue(
     /* Wait untill all enqueued items are ran. */
     while (xpf::ApiAtomicCompareExchange(&this->m_EnqueuedItems, uint32_t{ 0 }, uint32_t{ 0 }) != 0)
     {
-        xpf::ApiSleep(300);
+        xpf::ApiSleep(500);
     }
 }
 
@@ -194,7 +194,7 @@ KmHelper::WorkQueue::EnqueueWork(
 
         /* Run the work item. */
         ::ExQueueWorkItem(&item->WorkItem,
-                          WORK_QUEUE_TYPE::NormalWorkQueue);
+                          WORK_QUEUE_TYPE::BackgroundWorkQueue);
     }
 
     /* Re-enable deprecation warning. */
