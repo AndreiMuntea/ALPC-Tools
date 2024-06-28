@@ -2329,21 +2329,14 @@ INCLUDE_FILE_PATTERNS  =
 # recursively expanded use the := operator instead of the = operator.
 # This tag requires that the tag ENABLE_PREPROCESSING is set to YES.
 
-PREDEFINED             = DOXYGEN_SHOULD_SKIP_THIS \
-                         = \
-                         _Must_inspect_result_= \
-                         = \
-                         _IRQL_requires_max_(PASSIVE_LEVEL)= \
-                         = \
-                         _IRQL_requires_max_(APC_LEVEL)= \
-                         = \
-                         _IRQL_requires_max_(DISPATCH_LEVEL)= \
-                         = \
-                         _Use_decl_annotations_= \
-		         = \
-			 _IRQL_requires_same_= \
-		         = \
-			 _Function_class_(WORKER_THREAD_ROUTINE)=
+PREDEFINED             = DOXYGEN_SHOULD_SKIP_THIS
+PREDEFINED			  += _Must_inspect_result_= 
+PREDEFINED			  += _IRQL_requires_max_(PASSIVE_LEVEL)= 
+PREDEFINED			  += _IRQL_requires_max_(APC_LEVEL)= 
+PREDEFINED			  += _IRQL_requires_max_(DISPATCH_LEVEL)= 
+PREDEFINED			  += _Use_decl_annotations_= 
+PREDEFINED			  += _IRQL_requires_same_= 
+PREDEFINED			  += _Function_class_(WORKER_THREAD_ROUTINE)= 
 
 # If the MACRO_EXPANSION and EXPAND_ONLY_PREDEF tags are set to YES then this
 # tag can be used to specify a list of macro names that should be expanded. The

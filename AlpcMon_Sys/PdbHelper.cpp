@@ -303,14 +303,16 @@ PdbHelperComputePdbFullFilePath(
     PdbFullFilePath->Reset();
 
     /* Helper macro to help build the full file path */
-    #define HELPER_APPEND_DATA_TO_STRING(string, data)          \
-    {                                                           \
-        status = string->Append(data);                          \
-        if (!NT_SUCCESS(status))                                \
-        {                                                       \
-            return status;                                      \
-        }                                                       \
-    }
+    #ifndef DOXYGEN_SHOULD_SKIP_THIS
+        #define HELPER_APPEND_DATA_TO_STRING(string, data)          \
+        {                                                           \
+            status = string->Append(data);                          \
+            if (!NT_SUCCESS(status))                                \
+            {                                                       \
+                return status;                                      \
+            }                                                       \
+        }
+    #endif // DOXYGEN_SHOULD_SKIP_THIS
 
     /* Construct path. */
     HELPER_APPEND_DATA_TO_STRING(PdbFullFilePath, PdbDirectoryPath);
@@ -388,14 +390,16 @@ PdbHelperResolvePdb(
     };
 
     /* Helper macro to help build the request path and the full file path */
-    #define HELPER_APPEND_DATA_TO_STRING(string, data)          \
-    {                                                           \
-        status = string.Append(data);                           \
-        if (!NT_SUCCESS(status))                                \
-        {                                                       \
-            return status;                                      \
-        }                                                       \
-    }
+    #ifndef DOXYGEN_SHOULD_SKIP_THIS
+        #define HELPER_APPEND_DATA_TO_STRING(string, data)          \
+        {                                                           \
+            status = string.Append(data);                           \
+            if (!NT_SUCCESS(status))                                \
+            {                                                       \
+                return status;                                      \
+            }                                                       \
+        }
+    #endif  // DOXYGEN_SHOULD_SKIP_THIS
 
     HELPER_APPEND_DATA_TO_STRING(url, "http://msdl.microsoft.com/download/symbols/");
     HELPER_APPEND_DATA_TO_STRING(url, ansiFileName.View());

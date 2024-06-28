@@ -84,7 +84,7 @@ ProcessCollectorHandleTerminateProcess(
  * @param[in]   ProcessId   - the id of the process in which the module is loaded.
  * @param[in]   ModulePath  - the path of the new module.
  * @param[in]   ModuleBase  - the base address in the process where the module is loaded.
- * @parma[in]   ModuleSize  - the size of the module.
+ * @param[in]   ModuleSize  - the size of the module.
  *
  * @return      Nothing.
  */
