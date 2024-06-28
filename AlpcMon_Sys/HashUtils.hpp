@@ -141,7 +141,7 @@ _Must_inspect_result_
 NTSTATUS
 QueryFileNameFromObject(
     _In_ PVOID FileObject,
-    _Inout_ xpf::String<wchar_t, xpf::SplitAllocator>& FileName
+    _Inout_ xpf::String<wchar_t>& FileName
 ) noexcept(true);
 
 
@@ -227,7 +227,7 @@ NTSTATUS
 HashFile(
     _In_ HANDLE FileHandle,
     _In_ _Const_ const HashType& HashType,
-    _Inout_ xpf::Buffer<xpf::SplitAllocator>& Hash
+    _Inout_ xpf::Buffer& Hash
 ) noexcept(true);
 };  // namespace File
 };  // namespace KmHelper

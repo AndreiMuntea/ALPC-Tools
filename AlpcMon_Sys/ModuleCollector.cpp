@@ -56,11 +56,11 @@ class ModuleData final
      * @param[in,out]   ModuleSymbols  - Extracted modules symbols.
      */
     ModuleData(
-        _Inout_ xpf::String<wchar_t, xpf::SplitAllocator>&& ModulePath,
+        _Inout_ xpf::String<wchar_t>&& ModulePath,
         _In_ uint32_t PathHash,
-        _Inout_ xpf::Buffer<xpf::SplitAllocator>&& ModuleHash,
+        _Inout_ xpf::Buffer&& ModuleHash,
         _In_ KmHelper::File::HashType ModuleHashType,
-        _Inout_ xpf::Vector<xpf::pdb::SymbolInformation, xpf::SplitAllocator>&& ModuleSymbols
+        _Inout_ xpf::Vector<xpf::pdb::SymbolInformation>&& ModuleSymbols
     ) noexcept(true) : m_ModulePath{xpf::Move(ModulePath)},
                        m_PathHash{ PathHash },
                        m_ModuleHash{xpf::Move(ModuleHash)},
@@ -128,7 +128,7 @@ class ModuleData final
      * @return  const reference of the buffer containing the module hash.
      */
     inline
-    const xpf::Buffer<xpf::SplitAllocator>& XPF_API
+    const xpf::Buffer& XPF_API
     ModuleHash(
         void
     ) const noexcept(true)
@@ -163,7 +163,7 @@ class ModuleData final
      *          or the pdb was not found.
      */
     inline
-    const xpf::Vector<xpf::pdb::SymbolInformation, xpf::SplitAllocator>& XPF_API
+    const xpf::Vector<xpf::pdb::SymbolInformation>& XPF_API
     ModuleSymbols(
         void
     ) const noexcept(true)
@@ -206,13 +206,13 @@ class ModuleData final
     }
 
  private:
-    xpf::String<wchar_t, xpf::SplitAllocator> m_ModulePath;
+    xpf::String<wchar_t> m_ModulePath{ SYSMON_PAGED_ALLOCATOR };
     uint32_t m_PathHash = 0;
 
-    xpf::Buffer<xpf::SplitAllocator> m_ModuleHash;
+    xpf::Buffer m_ModuleHash{ SYSMON_PAGED_ALLOCATOR };
     KmHelper::File::HashType m_ModuleHashType = KmHelper::File::HashType::kMd5;
 
-    xpf::Vector<xpf::pdb::SymbolInformation, xpf::SplitAllocator> m_ModulesSymbols;
+    xpf::Vector<xpf::pdb::SymbolInformation> m_ModulesSymbols{ SYSMON_PAGED_ALLOCATOR };
 };  // class ModuleData
 
 /**
@@ -225,7 +225,7 @@ struct ModuleContext
     /**
      * @brief   The module path for which the computations have to be performed.
      */
-    xpf::String<wchar_t, xpf::SplitAllocator> Path;
+    xpf::String<wchar_t> Path{ SYSMON_PAGED_ALLOCATOR };
 };
 
 /**
@@ -349,17 +349,17 @@ class ModuleCollector final
     inline
     NTSTATUS XPF_API
     Insert(
-        _Inout_ xpf::String<wchar_t, xpf::SplitAllocator>&& ModulePath,
+        _Inout_ xpf::String<wchar_t>&& ModulePath,
         _In_ uint32_t PathHash,
-        _Inout_ xpf::Buffer<xpf::SplitAllocator>&& ModuleHash,
+        _Inout_ xpf::Buffer&& ModuleHash,
         _In_ KmHelper::File::HashType ModuleHashType,
-        _Inout_ xpf::Vector<xpf::pdb::SymbolInformation, xpf::SplitAllocator>&& ModulesSymbols
+        _Inout_ xpf::Vector<xpf::pdb::SymbolInformation>&& ModulesSymbols
     ) noexcept(true)
     {
         /* Code is paged. */
         XPF_MAX_APC_LEVEL();
 
-        xpf::SharedPointer<SysMon::ModuleData, xpf::SplitAllocator> newmodule;
+        xpf::SharedPointer<SysMon::ModuleData> newmodule{ SYSMON_PAGED_ALLOCATOR };
 
         /* Check if the module was already added in list. */
         xpf::ExclusiveLockGuard guard{ *this->m_ModulesLock };
@@ -373,11 +373,12 @@ class ModuleCollector final
         }
 
         /* Create a new module. */
-        newmodule = xpf::MakeShared<SysMon::ModuleData, xpf::SplitAllocator>(xpf::Move(ModulePath),
-                                                                             PathHash,
-                                                                             xpf::Move(ModuleHash),
-                                                                             ModuleHashType,
-                                                                             xpf::Move(ModulesSymbols));
+        newmodule = xpf::MakeSharedWithAllocator<SysMon::ModuleData>(SYSMON_PAGED_ALLOCATOR,
+                                                                     xpf::Move(ModulePath),
+                                                                     PathHash,
+                                                                     xpf::Move(ModuleHash),
+                                                                     ModuleHashType,
+                                                                     xpf::Move(ModulesSymbols));
         if (newmodule.IsEmpty())
         {
             return STATUS_INSUFFICIENT_RESOURCES;
@@ -399,7 +400,7 @@ class ModuleCollector final
      *              a reference to the stored module data otherwise.
      */
     inline
-    xpf::SharedPointer<SysMon::ModuleData, xpf::SplitAllocator> XPF_API
+    xpf::SharedPointer<SysMon::ModuleData> XPF_API
     Find(
         _In_ _Const_ const xpf::StringView<wchar_t>& ModulePath,
         _In_ uint32_t PathHash
@@ -408,7 +409,7 @@ class ModuleCollector final
         /* Code is paged. */
         XPF_MAX_APC_LEVEL();
 
-        xpf::SharedPointer<SysMon::ModuleData, xpf::SplitAllocator> foundModule;
+        xpf::SharedPointer<SysMon::ModuleData> foundModule{ SYSMON_PAGED_ALLOCATOR };
 
         xpf::SharedLockGuard guard{ *this->m_ModulesLock };
         for (size_t i = 0; i < this->m_Modules.Size(); ++i)
@@ -529,7 +530,7 @@ class ModuleCollector final
 
  private:
     xpf::Optional<xpf::ReadWriteLock> m_ModulesLock;
-    xpf::Vector<xpf::SharedPointer<SysMon::ModuleData, xpf::SplitAllocator>, xpf::SplitAllocator> m_Modules;
+    xpf::Vector<xpf::SharedPointer<SysMon::ModuleData>> m_Modules{ SYSMON_PAGED_ALLOCATOR };
     xpf::LookasideListAllocator m_ModuleContextAllocator;
     xpf::Optional<KmHelper::WorkQueue> m_ModulesWorkQueue;
     bool m_IsQueueRunDown = false;
@@ -570,8 +571,8 @@ ModuleCollectorWorkerCallback(
     NTSTATUS status = STATUS_UNSUCCESSFUL;
 
     KmHelper::File::HashType hashType = KmHelper::File::HashType::kMd5;
-    xpf::Buffer<xpf::SplitAllocator> hash;
-    xpf::Vector<xpf::pdb::SymbolInformation, xpf::SplitAllocator> symbolsInformation;
+    xpf::Buffer hash{ SYSMON_PAGED_ALLOCATOR };
+    xpf::Vector<xpf::pdb::SymbolInformation> symbolsInformation{ SYSMON_PAGED_ALLOCATOR };
 
     /* Don't expect this to be null. */
     SysMon::ModuleContext* data = static_cast<SysMon::ModuleContext*>(Argument);
@@ -725,7 +726,7 @@ ModuleCollectorHandleNewModule(
 
     NTSTATUS status = STATUS_UNSUCCESSFUL;
     uint32_t modulePathHash = 0;
-    xpf::SharedPointer<SysMon::ModuleData, xpf::SplitAllocator> cachedModule;
+    xpf::SharedPointer<SysMon::ModuleData> cachedModule{ SYSMON_PAGED_ALLOCATOR };
 
     /* If module path is empty, we are done. */
     if (ModulePath.IsEmpty())

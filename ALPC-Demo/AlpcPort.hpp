@@ -96,8 +96,8 @@ class AlpcPort final
     SendReceive(
         _In_ _Const_ const void* InputBuffer,
         _In_ size_t InputSize,
-        _Inout_ xpf::Buffer<xpf::SplitAllocator>& Output,
-        _Inout_ xpf::Buffer<xpf::SplitAllocator>& ViewOutput
+        _Inout_ xpf::Buffer& Output,
+        _Inout_ xpf::Buffer& ViewOutput
     ) noexcept(true);
 
  private:
@@ -114,7 +114,7 @@ class AlpcPort final
     _Must_inspect_result_
     NTSTATUS XPF_API
     InitializeMessageAttributes(
-        _Inout_ xpf::Buffer<xpf::SplitAllocator>& AttributesBuffer
+        _Inout_ xpf::Buffer& AttributesBuffer
     ) noexcept(true);
 
     /**
@@ -133,14 +133,14 @@ class AlpcPort final
     InitializePortMessage(
         _In_opt_ _Const_ const void* Buffer,
         _In_ size_t BufferSize,
-        _Inout_ xpf::Buffer<xpf::SplitAllocator>& PortMessage
+        _Inout_ xpf::Buffer& PortMessage
     ) noexcept(true);
 
  private:
     static constexpr uint16_t MAX_MESSAGE_SIZE = 0x1000;
 
     xpf::Optional<xpf::ReadWriteLock> m_PortLock;
-    xpf::String<wchar_t, xpf::SplitAllocator> m_PortName;
+    xpf::String<wchar_t> m_PortName;
     HANDLE m_PortHandle = NULL;
 
     /**

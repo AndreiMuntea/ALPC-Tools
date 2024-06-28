@@ -533,13 +533,13 @@ HelperUmHookPluginInject(
 _Use_decl_annotations_
 NTSTATUS XPF_API
 SysMon::UmHookPlugin::Create(
-    _Inout_ xpf::SharedPointer<SysMon::IPlugin, xpf::SplitAllocatorCritical>& Plugin,
+    _Inout_ xpf::SharedPointer<SysMon::IPlugin>& Plugin,
     _In_ const uint64_t& PluginId
 ) noexcept(true)
 {
     XPF_MAX_PASSIVE_LEVEL();
 
-    xpf::SharedPointer<SysMon::UmHookPlugin, xpf::SplitAllocatorCritical> plugin;
+    xpf::SharedPointer<SysMon::UmHookPlugin> plugin{ SYSMON_NPAGED_ALLOCATOR };
     NTSTATUS status = STATUS_UNSUCCESSFUL;
 
     SysMonLogInfo("Creating UmHookPlugin...");
@@ -547,7 +547,8 @@ SysMon::UmHookPlugin::Create(
     //
     // First create the plugin.
     //
-    plugin = xpf::MakeShared<SysMon::UmHookPlugin, xpf::SplitAllocatorCritical>(PluginId);
+    plugin = xpf::MakeSharedWithAllocator<SysMon::UmHookPlugin>(SYSMON_NPAGED_ALLOCATOR,
+                                                                PluginId);
     if (plugin.IsEmpty())
     {
         SysMonLogError("Insufficient resources to create the plugin");
@@ -619,9 +620,7 @@ SysMon::UmHookPlugin::Create(
     //
     // Cast it as IPlugin.
     //
-    Plugin = xpf::DynamicSharedPointerCast<SysMon::IPlugin,
-                                           SysMon::UmHookPlugin,
-                                           xpf::SplitAllocatorCritical>(xpf::Move(plugin));
+    Plugin = xpf::DynamicSharedPointerCast<SysMon::IPlugin, SysMon::UmHookPlugin>(xpf::Move(plugin));
     if (Plugin.IsEmpty())
     {
         SysMonLogError("Insufficient resources to cast the plugin");

@@ -42,7 +42,7 @@ XPF_SECTION_PAGED;
 _Use_decl_annotations_
 NTSTATUS XPF_API
 SysMon::ProcessCreateEvent::Create(
-    _Inout_ xpf::UniquePointer<xpf::IEvent, xpf::SplitAllocator>& Event,
+    _Inout_ xpf::UniquePointer<xpf::IEvent>& Event,
     _In_ uint32_t ProcessPid,
     _In_ const SysMon::ProcessArchitecture& ProcessArchitecture,
     _In_ _Const_ const xpf::StringView<wchar_t> ProcessPath
@@ -50,13 +50,13 @@ SysMon::ProcessCreateEvent::Create(
 {
     XPF_MAX_PASSIVE_LEVEL();
 
-    xpf::UniquePointer<SysMon::ProcessCreateEvent, xpf::SplitAllocator> eventInstance;
+    xpf::UniquePointer<SysMon::ProcessCreateEvent> eventInstance;
     NTSTATUS status = STATUS_UNSUCCESSFUL;
 
     //
     // First we create the event instance.
     //
-    eventInstance = xpf::MakeUnique<SysMon::ProcessCreateEvent, xpf::SplitAllocator>();
+    eventInstance = xpf::MakeUniqueWithAllocator<SysMon::ProcessCreateEvent>(SYSMON_PAGED_ALLOCATOR);
     if (eventInstance.IsEmpty())
     {
         return STATUS_INSUFFICIENT_RESOURCES;
@@ -77,7 +77,7 @@ SysMon::ProcessCreateEvent::Create(
     //
     // And finally cast to generic event.
     //
-    Event = xpf::DynamicUniquePointerCast<xpf::IEvent, SysMon::ProcessCreateEvent, xpf::SplitAllocator>(eventInstance);
+    Event = xpf::DynamicUniquePointerCast<xpf::IEvent, SysMon::ProcessCreateEvent>(eventInstance);
     return (Event.IsEmpty()) ? STATUS_INSUFFICIENT_RESOURCES
                              : STATUS_SUCCESS;
 }
@@ -93,18 +93,18 @@ SysMon::ProcessCreateEvent::Create(
 _Use_decl_annotations_
 NTSTATUS XPF_API
 SysMon::ProcessTerminateEvent::Create(
-    _Inout_ xpf::UniquePointer<xpf::IEvent, xpf::SplitAllocator>& Event,
+    _Inout_ xpf::UniquePointer<xpf::IEvent>& Event,
     _In_ uint32_t ProcessPid
 ) noexcept(true)
 {
     XPF_MAX_PASSIVE_LEVEL();
 
-    xpf::UniquePointer<SysMon::ProcessTerminateEvent, xpf::SplitAllocator> eventInstance;
+    xpf::UniquePointer<SysMon::ProcessTerminateEvent> eventInstance;
 
     //
     // First we create the event instance.
     //
-    eventInstance = xpf::MakeUnique<SysMon::ProcessTerminateEvent, xpf::SplitAllocator>();
+    eventInstance = xpf::MakeUniqueWithAllocator<SysMon::ProcessTerminateEvent>(SYSMON_PAGED_ALLOCATOR);
     if (eventInstance.IsEmpty())
     {
         return STATUS_INSUFFICIENT_RESOURCES;
@@ -119,7 +119,7 @@ SysMon::ProcessTerminateEvent::Create(
     //
     // And finally cast to generic event.
     //
-    Event = xpf::DynamicUniquePointerCast<xpf::IEvent, SysMon::ProcessTerminateEvent, xpf::SplitAllocator>(eventInstance);
+    Event = xpf::DynamicUniquePointerCast<xpf::IEvent, SysMon::ProcessTerminateEvent>(eventInstance);
     return (Event.IsEmpty()) ? STATUS_INSUFFICIENT_RESOURCES
                              : STATUS_SUCCESS;
 }
@@ -135,7 +135,7 @@ SysMon::ProcessTerminateEvent::Create(
 _Use_decl_annotations_
 NTSTATUS XPF_API
 SysMon::ImageLoadEvent::Create(
-    _Inout_ xpf::UniquePointer<xpf::IEvent, xpf::SplitAllocator>& Event,
+    _Inout_ xpf::UniquePointer<xpf::IEvent>& Event,
     _In_ uint32_t ProcessPid,
     _In_ _Const_ const xpf::StringView<wchar_t>& ImagePath,
     _In_ bool IsKernelImage,
@@ -145,13 +145,13 @@ SysMon::ImageLoadEvent::Create(
 {
     XPF_MAX_PASSIVE_LEVEL();
 
-    xpf::UniquePointer<SysMon::ImageLoadEvent, xpf::SplitAllocator> eventInstance;
+    xpf::UniquePointer<SysMon::ImageLoadEvent> eventInstance;
     NTSTATUS status = STATUS_UNSUCCESSFUL;
 
     //
     // First we create the event instance.
     //
-    eventInstance = xpf::MakeUnique<SysMon::ImageLoadEvent, xpf::SplitAllocator>();
+    eventInstance = xpf::MakeUniqueWithAllocator<SysMon::ImageLoadEvent>(SYSMON_PAGED_ALLOCATOR);
     if (eventInstance.IsEmpty())
     {
         return STATUS_INSUFFICIENT_RESOURCES;
@@ -175,7 +175,7 @@ SysMon::ImageLoadEvent::Create(
     //
     // And finally cast to generic event.
     //
-    Event = xpf::DynamicUniquePointerCast<xpf::IEvent, SysMon::ImageLoadEvent, xpf::SplitAllocator>(eventInstance);
+    Event = xpf::DynamicUniquePointerCast<xpf::IEvent, SysMon::ImageLoadEvent>(eventInstance);
     return (Event.IsEmpty()) ? STATUS_INSUFFICIENT_RESOURCES
                              : STATUS_SUCCESS;
 }
@@ -191,19 +191,19 @@ SysMon::ImageLoadEvent::Create(
 _Use_decl_annotations_
 NTSTATUS XPF_API
 SysMon::ThreadCreateEvent::Create(
-    _Inout_ xpf::UniquePointer<xpf::IEvent, xpf::SplitAllocator>& Event,
+    _Inout_ xpf::UniquePointer<xpf::IEvent>& Event,
     _In_ uint32_t ProcessPid,
     _In_ uint32_t ThreadTid
 ) noexcept(true)
 {
     XPF_MAX_APC_LEVEL();
 
-    xpf::UniquePointer<SysMon::ThreadCreateEvent, xpf::SplitAllocator> eventInstance;
+    xpf::UniquePointer<SysMon::ThreadCreateEvent> eventInstance;
 
     //
     // First we create the event instance.
     //
-    eventInstance = xpf::MakeUnique<SysMon::ThreadCreateEvent, xpf::SplitAllocator>();
+    eventInstance = xpf::MakeUniqueWithAllocator<SysMon::ThreadCreateEvent>(SYSMON_PAGED_ALLOCATOR);
     if (eventInstance.IsEmpty())
     {
         return STATUS_INSUFFICIENT_RESOURCES;
@@ -220,7 +220,7 @@ SysMon::ThreadCreateEvent::Create(
     //
     // And finally cast to generic event.
     //
-    Event = xpf::DynamicUniquePointerCast<xpf::IEvent, SysMon::ThreadCreateEvent, xpf::SplitAllocator>(eventInstance);
+    Event = xpf::DynamicUniquePointerCast<xpf::IEvent, SysMon::ThreadCreateEvent>(eventInstance);
     return (Event.IsEmpty()) ? STATUS_INSUFFICIENT_RESOURCES
                              : STATUS_SUCCESS;
 }
@@ -236,19 +236,19 @@ SysMon::ThreadCreateEvent::Create(
 _Use_decl_annotations_
 NTSTATUS XPF_API
 SysMon::ThreadTerminateEvent::Create(
-    _Inout_ xpf::UniquePointer<xpf::IEvent, xpf::SplitAllocator>& Event,
+    _Inout_ xpf::UniquePointer<xpf::IEvent>& Event,
     _In_ uint32_t ProcessPid,
     _In_ uint32_t ThreadTid
 ) noexcept(true)
 {
     XPF_MAX_APC_LEVEL();
 
-    xpf::UniquePointer<SysMon::ThreadTerminateEvent, xpf::SplitAllocator> eventInstance;
+    xpf::UniquePointer<SysMon::ThreadTerminateEvent> eventInstance;
 
     //
     // First we create the event instance.
     //
-    eventInstance = xpf::MakeUnique<SysMon::ThreadTerminateEvent, xpf::SplitAllocator>();
+    eventInstance = xpf::MakeUniqueWithAllocator<SysMon::ThreadTerminateEvent>(SYSMON_PAGED_ALLOCATOR);
     if (eventInstance.IsEmpty())
     {
         return STATUS_INSUFFICIENT_RESOURCES;
@@ -265,7 +265,7 @@ SysMon::ThreadTerminateEvent::Create(
     //
     // And finally cast to generic event.
     //
-    Event = xpf::DynamicUniquePointerCast<xpf::IEvent, SysMon::ThreadTerminateEvent, xpf::SplitAllocator>(eventInstance);
+    Event = xpf::DynamicUniquePointerCast<xpf::IEvent, SysMon::ThreadTerminateEvent>(eventInstance);
     return (Event.IsEmpty()) ? STATUS_INSUFFICIENT_RESOURCES
                              : STATUS_SUCCESS;
 }
@@ -281,18 +281,18 @@ SysMon::ThreadTerminateEvent::Create(
 _Use_decl_annotations_
 NTSTATUS XPF_API
 SysMon::UmHookEvent::Create(
-    _Inout_ xpf::UniquePointer<xpf::IEvent, xpf::SplitAllocator>& Event,
+    _Inout_ xpf::UniquePointer<xpf::IEvent>& Event,
     _In_ void* UmHookMessage
 ) noexcept(true)
 {
     XPF_MAX_PASSIVE_LEVEL();
 
-    xpf::UniquePointer<SysMon::UmHookEvent, xpf::SplitAllocator> eventInstance;
+    xpf::UniquePointer<SysMon::UmHookEvent> eventInstance;
 
     //
     // First we create the event instance.
     //
-    eventInstance = xpf::MakeUnique<SysMon::UmHookEvent, xpf::SplitAllocator>();
+    eventInstance = xpf::MakeUniqueWithAllocator<SysMon::UmHookEvent>(SYSMON_PAGED_ALLOCATOR);
     if (eventInstance.IsEmpty())
     {
         return STATUS_INSUFFICIENT_RESOURCES;
@@ -308,7 +308,7 @@ SysMon::UmHookEvent::Create(
     //
     // And finally cast to generic event.
     //
-    Event = xpf::DynamicUniquePointerCast<xpf::IEvent, SysMon::UmHookEvent, xpf::SplitAllocator>(eventInstance);
+    Event = xpf::DynamicUniquePointerCast<xpf::IEvent, SysMon::UmHookEvent>(eventInstance);
     return (Event.IsEmpty()) ? STATUS_INSUFFICIENT_RESOURCES
                              : STATUS_SUCCESS;
 }

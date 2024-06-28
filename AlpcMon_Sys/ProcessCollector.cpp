@@ -42,7 +42,7 @@ class ProcessModuleData final
      * @param[in]       ModuleSize     - the size of the laoded modules (in bytes). 
      */
     ProcessModuleData(
-        _Inout_ xpf::String<wchar_t, xpf::SplitAllocator>&& ModulePath,
+        _Inout_ xpf::String<wchar_t>&& ModulePath,
         _In_ _Const_ const void* ModuleBase,
         _In_ _Const_ const size_t& ModuleSize
     ) noexcept(true) : m_ModulePath{xpf::Move(ModulePath)},
@@ -150,7 +150,7 @@ class ProcessModuleData final
     }
 
  private:
-    xpf::String<wchar_t, xpf::SplitAllocator> m_ModulePath;
+     xpf::String<wchar_t> m_ModulePath{ SYSMON_PAGED_ALLOCATOR };
 
     const void* m_ModuleBase = nullptr;
     const void* m_ModuleEnd = nullptr;
@@ -172,7 +172,7 @@ class ProcessData final
     * @param[in]       ProcessId   - the id of the started process.
     */
     ProcessData(
-        _Inout_ xpf::String<wchar_t, xpf::SplitAllocator>&& ProcessPath,
+        _Inout_ xpf::String<wchar_t>&& ProcessPath,
         _In_ const uint32_t& ProcessId
     ) noexcept(true) : m_ProcessPath{xpf::Move(ProcessPath)},
                        m_ProcessId{ProcessId}
@@ -215,9 +215,9 @@ class ProcessData final
     * @return          A properly initialized shared pointer with Process data.
     *                  Empty shared pointer on failure.
     */
-    static xpf::SharedPointer<SysMon::ProcessData, xpf::SplitAllocator> XPF_API
+    static xpf::SharedPointer<SysMon::ProcessData> XPF_API
     Create(
-        _Inout_ xpf::String<wchar_t, xpf::SplitAllocator>&& ProcessPath,
+        _Inout_ xpf::String<wchar_t>&& ProcessPath,
         _In_ const uint32_t& ProcessId
     ) noexcept(true)
     {
@@ -225,10 +225,11 @@ class ProcessData final
         XPF_MAX_APC_LEVEL();
 
         NTSTATUS status = STATUS_UNSUCCESSFUL;
-        xpf::SharedPointer<SysMon::ProcessData, xpf::SplitAllocator> result;
+        xpf::SharedPointer<SysMon::ProcessData> result{ SYSMON_PAGED_ALLOCATOR };
 
-        result = xpf::MakeShared<SysMon::ProcessData, xpf::SplitAllocator>(xpf::Move(ProcessPath),
-                                                                           ProcessId);
+        result = xpf::MakeSharedWithAllocator<SysMon::ProcessData>(SYSMON_PAGED_ALLOCATOR,
+                                                                   xpf::Move(ProcessPath),
+                                                                   ProcessId);
         if (result.IsEmpty())
         {
             return result;
@@ -270,7 +271,7 @@ class ProcessData final
         NTSTATUS status = STATUS_UNSUCCESSFUL;
 
         /* We need to take ownership of the path, so duplicate it here. */
-        xpf::String<wchar_t, xpf::SplitAllocator> modulePath;
+        xpf::String<wchar_t> modulePath{ SYSMON_PAGED_ALLOCATOR };
         status = modulePath.Append(ModulePath);
         if (!NT_SUCCESS(status))
         {
@@ -342,10 +343,10 @@ class ProcessData final
 
  private:
     uint32_t m_ProcessId = 0;
-    xpf::String<wchar_t, xpf::SplitAllocator> m_ProcessPath;
+    xpf::String<wchar_t> m_ProcessPath{ SYSMON_PAGED_ALLOCATOR };
 
     xpf::Optional<xpf::ReadWriteLock> m_LoadedModulesLock;
-    xpf::Vector<SysMon::ProcessModuleData, xpf::SplitAllocator> m_LoadedModules;
+    xpf::Vector<SysMon::ProcessModuleData> m_LoadedModules{ SYSMON_PAGED_ALLOCATOR };
 
     /**
      * @brief   This is a friend class as it needs access so it can properly initialize
@@ -470,7 +471,7 @@ class ProcessCollector final
         XPF_MAX_PASSIVE_LEVEL();
 
         NTSTATUS status = STATUS_UNSUCCESSFUL;
-        xpf::String<wchar_t, xpf::SplitAllocator> processPath;
+        xpf::String<wchar_t> processPath{ SYSMON_PAGED_ALLOCATOR };
 
         /* We need ownership over path, so we duplicate it here. */
         status = processPath.Append(ProcessPath);
@@ -480,9 +481,8 @@ class ProcessCollector final
         }
 
         /* Create a shared pointer structure. */
-        xpf::SharedPointer<SysMon::ProcessData, xpf::SplitAllocator> process;
-        process = SysMon::ProcessData::Create(xpf::Move(processPath),
-                                              ProcessId);
+        xpf::SharedPointer<SysMon::ProcessData> process = SysMon::ProcessData::Create(xpf::Move(processPath),
+                                                                                      ProcessId);
         if (process.IsEmpty())
         {
             return STATUS_INSUFFICIENT_RESOURCES;
@@ -510,8 +510,8 @@ class ProcessCollector final
         }
 
         /* Keep it sorted. */
-        this->m_Processes.Sort([&](const xpf::SharedPointer<SysMon::ProcessData, xpf::SplitAllocator>& Left,
-                                   const xpf::SharedPointer<SysMon::ProcessData, xpf::SplitAllocator>& Right)
+        this->m_Processes.Sort([&](const xpf::SharedPointer<SysMon::ProcessData>& Left,
+                                   const xpf::SharedPointer<SysMon::ProcessData>& Right)
                                {
                                     XPF_MAX_PASSIVE_LEVEL();
                                     return Left.Get()->ProcessId() < Right.Get()->ProcessId();
@@ -571,7 +571,7 @@ class ProcessCollector final
         XPF_MAX_PASSIVE_LEVEL();
 
         /* Lookup the process. */
-        xpf::SharedPointer<SysMon::ProcessData, xpf::SplitAllocator> process = this->LookupProcessData(ProcessPid);
+        xpf::SharedPointer<SysMon::ProcessData> process = this->LookupProcessData(ProcessPid);
         if (process.IsEmpty())
         {
             return STATUS_NOT_FOUND;
@@ -644,13 +644,13 @@ class ProcessCollector final
       * @return     The shared pointer describing the process. Empty if not found.
       */
      inline
-     xpf::SharedPointer<SysMon::ProcessData, xpf::SplitAllocator> XPF_API
+     xpf::SharedPointer<SysMon::ProcessData> XPF_API
      LookupProcessData(
          _In_ _Const_ const uint32_t& ProcessId
      )
      {
          XPF_MAX_APC_LEVEL();
-         xpf::SharedPointer<SysMon::ProcessData, xpf::SplitAllocator> result;
+         xpf::SharedPointer<SysMon::ProcessData> result{ SYSMON_PAGED_ALLOCATOR };
          xpf::Optional<size_t> index;
 
          /* Shared guard because we're just doing a lookup for the process data. */
@@ -666,8 +666,7 @@ class ProcessCollector final
 
  private:
     xpf::Optional<xpf::ReadWriteLock> m_ProcessesLock;
-    xpf::Vector<xpf::SharedPointer<SysMon::ProcessData, xpf::SplitAllocator>,
-                xpf::SplitAllocator> m_Processes;
+    xpf::Vector<xpf::SharedPointer<SysMon::ProcessData>> m_Processes{ SYSMON_PAGED_ALLOCATOR };
     /**
      * @brief   This is a friend class as it needs access so it can properly initialize
      *          the object so we won't return partially constructed objects.

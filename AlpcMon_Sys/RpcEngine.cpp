@@ -57,7 +57,7 @@ RpcEngineDumpMessage(
 {
     XPF_MAX_APC_LEVEL();
 
-    xpf::String<wchar_t, xpf::SplitAllocator> buffer;
+    xpf::String<wchar_t> buffer{ DceAllocator };
     NTSTATUS status = STATUS_UNSUCCESSFUL;
 
     WCHAR ustrBuff[256] = { 0 };
@@ -204,7 +204,7 @@ RpcEngineAnalyzeSamrMessage(
         }
 
         /* Grab the actual name in a more convenient form. */
-        xpf::String<wchar_t, AlpcRpc::DceNdr::DceAllocator> strName;
+        xpf::String<wchar_t> strName{ DceAllocator };
         status = name.GetBuffer(strName);
         if (!NT_SUCCESS(status))
         {
@@ -282,9 +282,9 @@ RpcEngineAnalyzeSvcCtlMessage(
         }
 
         /* Grab the strings in a more convenient form */
-        xpf::String<wchar_t, AlpcRpc::DceNdr::DceAllocator> strServiceName;
-        xpf::String<wchar_t, AlpcRpc::DceNdr::DceAllocator> strDisplayName;
-        xpf::String<wchar_t, AlpcRpc::DceNdr::DceAllocator> strBinaryPathName;
+        xpf::String<wchar_t> strServiceName{ DceAllocator };
+        xpf::String<wchar_t> strDisplayName{ DceAllocator };
+        xpf::String<wchar_t> strBinaryPathName{ DceAllocator };
 
         status = AlpcRpc::HelperNdrWstringToWstring(lpServiceName,
                                                     strServiceName);
@@ -364,7 +364,7 @@ RpcEngineAnalyzeITaskSchedulerMessage(
         }
 
         /* Grab the strings in a more convenient form */
-        xpf::String<wchar_t, AlpcRpc::DceNdr::DceAllocator> strPath;
+        xpf::String<wchar_t> strPath{ DceAllocator };
 
         status = AlpcRpc::HelperNdrWstringToWstring(path,
                                                     strPath);
@@ -422,7 +422,7 @@ RpcEngineAnalyzeIEventServiceMessage(
         }
 
         /* Grab the strings in a more convenient form */
-        xpf::String<wchar_t, DceAllocator> channelPathStr;
+        xpf::String<wchar_t> channelPathStr{ DceAllocator };
 
         status = AlpcRpc::HelperNdrWstringToWstring(channelPath,
                                                     channelPathStr);
@@ -513,7 +513,7 @@ SysMon::RpcEngine::Analyze(
     //
     // Grab a marshall buffer.
     //
-    xpf::Buffer<AlpcRpc::DceNdr::DceAllocator> rawBuffer;
+    xpf::Buffer rawBuffer{ DceAllocator };
     NTSTATUS status = rawBuffer.Resize(BufferSize);
     if (!NT_SUCCESS(status))
     {

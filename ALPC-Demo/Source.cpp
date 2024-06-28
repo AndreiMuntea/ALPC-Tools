@@ -47,7 +47,7 @@ CommandRunTask(
 ) noexcept(true)
 {
     char taskPath[MAX_PATH] = { 0 };
-    xpf::String<wchar_t> wideTaskPath;
+    xpf::String<wchar_t> wideTaskPath{ DceAllocator };
 
     NTSTATUS status = STATUS_UNSUCCESSFUL;
     xpf::Optional<AlpcRpc::DceNdr::ITaskSchedulerInterface> port;
@@ -408,10 +408,10 @@ CommandCreateService(
     DcePrimitiveType<ALPC_RPC_CONTEXT_HANDLE> lpServiceHandle;
 
     char serviceName[MAX_PATH] = { 0 };
-    xpf::String<wchar_t> wideServiceName;
+    xpf::String<wchar_t> wideServiceName{ DceAllocator };
 
     char servicePath[MAX_PATH] = { 0 };
-    xpf::String<wchar_t> wideServicePath;
+    xpf::String<wchar_t> wideServicePath{ DceAllocator };
 
     bool hasServiceHandle = false;
 
@@ -551,7 +551,7 @@ CommandCreateUser(
 
     /* Get the user name. */
     char userName[MAX_PATH] = { 0 };
-    xpf::String<wchar_t> wideUserName;
+    xpf::String<wchar_t> wideUserName{ DceAllocator };
     DceUniquePointer<DceNdrWstring> dceUserName;
 
     printf("Please input the user name to be create:\r\n");
@@ -786,14 +786,6 @@ wmain(
     XPF_UNREFERENCED_PARAMETER(ArgumentsCount);
     XPF_UNREFERENCED_PARAMETER(Arguments);
 
-    NTSTATUS status = xpf::SplitAllocatorInitializeSupport();
-    if (!NT_SUCCESS(status))
-    {
-        printf("Failed to initialize Split Allocator support to reduce memory pressure! status = 0x%x \r\n",
-               status);
-        return -1;
-    }
-
     CommandPrintHelp();
 
     while (true)
@@ -835,6 +827,5 @@ wmain(
         }
     }
 
-    xpf::SplitAllocatorDeinitializeSupport();
     return 0;
 }

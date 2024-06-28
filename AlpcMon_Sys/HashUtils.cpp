@@ -303,7 +303,7 @@ struct FileObjectFileNameContext
     /**
      * @brief   The resulted file name.
      */
-    /* [out] */    xpf::String<wchar_t, xpf::SplitAllocator> FileName;
+    /* [out] */    xpf::String<wchar_t> FileName{ SYSMON_PAGED_ALLOCATOR };
 
     /**
      * @breif   The status of the operation. 
@@ -326,7 +326,7 @@ static NTSTATUS XPF_API
 FltGetFileNameInformationUnsafeWrapper(
     _In_ PVOID FileObject,
     _In_ FLT_FILE_NAME_OPTIONS NameOptions,
-    _Inout_ xpf::String<wchar_t, xpf::SplitAllocator>& FileName
+    _Inout_ xpf::String<wchar_t>& FileName
 ) noexcept(true)
 {
     XPF_MAX_PASSIVE_LEVEL();
@@ -413,7 +413,7 @@ QueryFileNameFromObjectWorker(
 static NTSTATUS XPF_API
 QueryFileNameFromObjectFallback(
     _In_ PVOID FileObject,
-    _Inout_ xpf::String<wchar_t, xpf::SplitAllocator>& FileName
+    _Inout_ xpf::String<wchar_t>& FileName
 ) noexcept(true)
 {
     XPF_MAX_PASSIVE_LEVEL();
@@ -438,7 +438,7 @@ _Use_decl_annotations_
 NTSTATUS
 KmHelper::File::QueryFileNameFromObject(
     _In_ PVOID FileObject,
-    _Inout_ xpf::String<wchar_t, xpf::SplitAllocator>& FileName
+    _Inout_ xpf::String<wchar_t>& FileName
 ) noexcept(true)
 {
     XPF_MAX_PASSIVE_LEVEL();
@@ -628,7 +628,7 @@ NTSTATUS
 KmHelper::File::HashFile(
     _In_ HANDLE FileHandle,
     _In_ _Const_ const HashType& HashType,
-    _Inout_ xpf::Buffer<xpf::SplitAllocator>& Hash
+    _Inout_ xpf::Buffer& Hash
 ) noexcept(true)
 {
     XPF_MAX_PASSIVE_LEVEL();

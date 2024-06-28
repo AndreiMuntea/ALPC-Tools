@@ -73,7 +73,7 @@ class RpcAlpcInspectionPlugin final : public IPlugin
     _Must_inspect_result_
     static NTSTATUS XPF_API
     Create(
-        _Inout_ xpf::SharedPointer<SysMon::IPlugin, xpf::SplitAllocatorCritical>& Plugin,
+        _Inout_ xpf::SharedPointer<SysMon::IPlugin>& Plugin,
         _In_ const uint64_t& PluginId
     ) noexcept(true);
 

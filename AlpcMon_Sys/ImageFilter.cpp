@@ -140,8 +140,8 @@ ImageFilterImageLoadNotifyRoutineCallback(
 
     NTSTATUS status = STATUS_UNSUCCESSFUL;
     bool isKernelImage = false;
-    xpf::String<wchar_t, xpf::SplitAllocator> fullImagePath;
-    xpf::UniquePointer<xpf::IEvent, xpf::SplitAllocator> broadcastEvent;
+    xpf::String<wchar_t> fullImagePath{ SYSMON_PAGED_ALLOCATOR };
+    xpf::UniquePointer<xpf::IEvent> broadcastEvent{ SYSMON_PAGED_ALLOCATOR };
 
     PIMAGE_INFO_EX imageInfoExtended = nullptr;
 

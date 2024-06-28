@@ -195,7 +195,7 @@ class DceMarshallBuffer final
      *
      * @return          Const reference to the underlying buffer.
      */
-    inline const xpf::Buffer<DceAllocator>& XPF_API
+    inline const xpf::Buffer& XPF_API
     Buffer(
         void
     ) const noexcept(true)
@@ -212,7 +212,7 @@ class DceMarshallBuffer final
      */
     inline void XPF_API
     MarshallRawBuffer(
-        _In_ _Const_ const xpf::Buffer<DceAllocator>&Buffer
+        _In_ _Const_ const xpf::Buffer& Buffer
     ) noexcept(true)
     {
         if (NT_SUCCESS(this->m_StreamStatus))
@@ -816,7 +816,7 @@ class DceUniquePointer final : public DceSerializableObject
       *                           One reference will be incremented to be stored by m_Data.
       */
      DceUniquePointer(
-         _In_ _Const_ const xpf::SharedPointer<Type, DceAllocator>& Pointer
+         _In_ _Const_ const xpf::SharedPointer<Type>& Pointer
      ) noexcept(true) : DceSerializableObject(),
                         m_Data{ Pointer }
      {
@@ -835,7 +835,7 @@ class DceUniquePointer final : public DceSerializableObject
          _In_ _Const_ const Type& Data
      ) noexcept(true) : DceSerializableObject()
      {
-         this->m_Data = xpf::MakeShared<Type, DceAllocator>(Data);
+         this->m_Data = xpf::MakeSharedWithAllocator<Type>(DceAllocator, Data);
      }
 
      /**
@@ -935,7 +935,7 @@ class DceUniquePointer final : public DceSerializableObject
          }
 
          /* Now construct the unique ptr from the data. */
-         this->m_Data = xpf::MakeShared<Type, DceAllocator>(xpf::Move(data));
+         this->m_Data = xpf::MakeSharedWithAllocator<Type>(DceAllocator, xpf::Move(data));
          return (this->m_Data.IsEmpty()) ? STATUS_INSUFFICIENT_RESOURCES
                                          : STATUS_SUCCESS;
      }
@@ -954,7 +954,7 @@ class DceUniquePointer final : public DceSerializableObject
      }
 
  private:
-     xpf::SharedPointer<Type, DceAllocator> m_Data;
+     xpf::SharedPointer<Type> m_Data{ DceAllocator };
 };  // class DceUniquePointer
 
 
@@ -1030,7 +1030,7 @@ class DceUniDimensionalArray final : public DceSerializableObject
      *                             Will be copied into m_Data.
      */
     DceUniDimensionalArray(
-        _In_ _Const_ const xpf::SharedPointer<xpf::Vector<Type, DceAllocator>, DceAllocator>& Elements
+        _In_ _Const_ const xpf::SharedPointer<xpf::Vector<Type>>& Elements
     ) noexcept(true) : DceSerializableObject(),
                        m_Data{Elements}
     {
@@ -1118,11 +1118,11 @@ class DceUniDimensionalArray final : public DceSerializableObject
      ) noexcept(true) override
      {
          NTSTATUS status = STATUS_UNSUCCESSFUL;
-         xpf::Vector<Type, DceAllocator> elements;
+         xpf::Vector<Type> elements{ DceAllocator };
          uint32_t count = 0;
 
          /* First we clear the underlying data. */
-         this->m_Data = xpf::MakeShared<xpf::Vector<Type, DceAllocator>, DceAllocator>();
+         this->m_Data = xpf::MakeSharedWithAllocator<xpf::Vector<Type>>(DceAllocator);
          if (this->m_Data.IsEmpty())
          {
              return STATUS_INSUFFICIENT_RESOURCES;
@@ -1165,7 +1165,7 @@ class DceUniDimensionalArray final : public DceSerializableObject
       * @return     A const reference to the data object.
       */
      inline const
-     xpf::Vector<Type, DceAllocator>& XPF_API
+     xpf::Vector<Type>& XPF_API
      Data(
          void
      ) const noexcept(true)
@@ -1301,8 +1301,7 @@ class DceUniDimensionalArray final : public DceSerializableObject
      }
 
  private:
-     xpf::SharedPointer<xpf::Vector<Type, DceAllocator>,
-                        DceAllocator> m_Data;
+     xpf::SharedPointer<xpf::Vector<Type>> m_Data{ DceAllocator };
 };  // class DceConformantArray
 
 /**
@@ -1327,7 +1326,7 @@ class DceUniDimensionalPointerArray final : public DceSerializableObject
      *                             Will be copied into m_Data.
      */
      DceUniDimensionalPointerArray(
-        _In_ _Const_ const xpf::SharedPointer<xpf::Vector<DceUniquePointer<Type>, DceAllocator>, DceAllocator>& Elements
+        _In_ _Const_ const xpf::SharedPointer<xpf::Vector<DceUniquePointer<Type>>>& Elements
      ) noexcept(true) : DceSerializableObject(),
                         m_Data{Elements}
      {
@@ -1360,7 +1359,7 @@ class DceUniDimensionalPointerArray final : public DceSerializableObject
          _In_ uint32_t LrpcTransferSyntax
      ) const noexcept(true) override
      {
-         xpf::SharedPointer<xpf::Vector<DceRawPointer, DceAllocator>, DceAllocator> referentArray;
+         xpf::SharedPointer<xpf::Vector<DceRawPointer>> referentArray{ DceAllocator };
          NTSTATUS status = STATUS_UNSUCCESSFUL;
 
          /* Sanity check that the data is not empty. */
@@ -1370,7 +1369,7 @@ class DceUniDimensionalPointerArray final : public DceSerializableObject
          }
 
          /* First we'll construct a referent array. This is just the addresses. */
-         referentArray = xpf::MakeShared<xpf::Vector<DceRawPointer, DceAllocator>, DceAllocator>();
+         referentArray = xpf::MakeSharedWithAllocator<xpf::Vector<DceRawPointer>>(DceAllocator);
          if (referentArray.IsEmpty())
          {
              return STATUS_INSUFFICIENT_RESOURCES;
@@ -1441,7 +1440,7 @@ class DceUniDimensionalPointerArray final : public DceSerializableObject
          DceUniDimensionalArray<DceRawPointer, ArrayType> dceReferentArray;
 
          /* Clear the underlying data. */
-         this->m_Data = xpf::MakeShared<xpf::Vector<DceUniquePointer<Type>, DceAllocator>, DceAllocator>();
+         this->m_Data = xpf::MakeSharedWithAllocator<xpf::Vector<DceUniquePointer<Type>>>(DceAllocator);
          if (this->m_Data.IsEmpty())
          {
              return STATUS_INSUFFICIENT_RESOURCES;
@@ -1455,11 +1454,11 @@ class DceUniDimensionalPointerArray final : public DceSerializableObject
          }
 
          /* Now the elements. */
-         const xpf::Vector<DceRawPointer, DceAllocator>& referentArray = dceReferentArray.Data();
+         const xpf::Vector<DceRawPointer>& referentArray = dceReferentArray.Data();
          for (size_t i = 0; i < referentArray.Size(); ++i)
          {
              Type element{};
-             xpf::SharedPointer<Type, DceAllocator> ptrElement;
+             xpf::SharedPointer<Type> ptrElement{ DceAllocator };
 
              if (referentArray[i].Data() != nullptr)
              {
@@ -1471,7 +1470,7 @@ class DceUniDimensionalPointerArray final : public DceSerializableObject
                  }
 
                  /* Now we'll transform into a pointer. */
-                 ptrElement = xpf::MakeShared<Type, DceAllocator>(xpf::Move(element));
+                 ptrElement = xpf::MakeSharedWithAllocator<Type>(DceAllocator, xpf::Move(element));
                  if (ptrElement.IsEmpty())
                  {
                      return STATUS_INSUFFICIENT_RESOURCES;
@@ -1496,7 +1495,7 @@ class DceUniDimensionalPointerArray final : public DceSerializableObject
       * @return     A const reference to the data object.
       */
      inline const
-     xpf::Vector<DceUniquePointer<Type>, DceAllocator>& XPF_API
+     xpf::Vector<DceUniquePointer<Type>>& XPF_API
      Data(
          void
      ) const noexcept(true)
@@ -1506,9 +1505,7 @@ class DceUniDimensionalPointerArray final : public DceSerializableObject
 
 
  private:
-     xpf::SharedPointer<xpf::Vector<DceUniquePointer<Type>,
-                                    DceAllocator>,
-                        DceAllocator> m_Data;
+     xpf::SharedPointer<xpf::Vector<DceUniquePointer<Type>>> m_Data{ DceAllocator };
 };  // class DceUniDimensionalPointerArray
 
 /**

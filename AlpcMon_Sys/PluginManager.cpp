@@ -165,7 +165,7 @@ SysMon::PluginManager::Create(
     #ifndef DOXYGEN_SHOULD_SKIP_THIS
     #define SYSMON_PLUGIN_MANAGER_MAKE_PLUGIN(PluginType, PluginId)                                                     /* NOLINT(*) */  \
     {                                                                                                                   /* NOLINT(*) */  \
-        xpf::SharedPointer<IPlugin, xpf::SplitAllocatorCritical> instance;                                              /* NOLINT(*) */  \
+        xpf::SharedPointer<IPlugin> instance {SYSMON_NPAGED_ALLOCATOR};                                                 /* NOLINT(*) */  \
                                                                                                                         /* NOLINT(*) */  \
         status = PluginType::Create(instance, PluginId);                                                                /* NOLINT(*) */  \
         if(!NT_SUCCESS(status))                                                                                         /* NOLINT(*) */  \

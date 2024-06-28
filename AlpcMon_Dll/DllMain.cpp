@@ -48,19 +48,12 @@ DllMain(
     {
     case DLL_PROCESS_ATTACH:
     {
-        status = xpf::SplitAllocatorInitializeSupport();
-        if (!NT_SUCCESS(status))
-        {
-            break;
-        }
-
         status = HookEngineInitialize();
         break;
     }
     case DLL_PROCESS_DETACH:
     {
         HookEngineDeinitialize();
-        xpf::SplitAllocatorDeinitializeSupport();
         break;
     }
     case DLL_THREAD_ATTACH:

@@ -63,11 +63,11 @@ struct GlobalData
     /**
      * @brief   The driver registry key.
      */
-    xpf::String<wchar_t, xpf::SplitAllocatorCritical> RegistryKey;
+    xpf::String<wchar_t> RegistryKey{ SYSMON_NPAGED_ALLOCATOR };
     /**
      * @brief   The driver's running directory as Dos path.
      */
-    xpf::String<wchar_t, xpf::SplitAllocatorCritical> DriverDirectoryDos;
+    xpf::String<wchar_t> DriverDirectoryDos{ SYSMON_NPAGED_ALLOCATOR };
     /**
      * @brief   The os version.
      */
@@ -245,7 +245,7 @@ GlobalDataCreate(
 
     NTSTATUS status = STATUS_UNSUCCESSFUL;
     xpf::StringView<wchar_t> regKey;
-    xpf::Buffer<xpf::SplitAllocatorCritical> regKeyBuffer;
+    xpf::Buffer regKeyBuffer{ SYSMON_NPAGED_ALLOCATOR };
 
     SysMonLogInfo("Creating global data...");
 

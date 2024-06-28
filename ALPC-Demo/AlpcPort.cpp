@@ -173,15 +173,15 @@ NTSTATUS XPF_API
 AlpcRpc::AlpcPort::SendReceive(
     _In_ _Const_ const void* InputBuffer,
     _In_ size_t InputSize,
-    _Inout_ xpf::Buffer<xpf::SplitAllocator>& Output,
-    _Inout_ xpf::Buffer<xpf::SplitAllocator>& ViewOutput
+    _Inout_ xpf::Buffer& Output,
+    _Inout_ xpf::Buffer& ViewOutput
 ) noexcept(true)
 {
     XPF_MAX_PASSIVE_LEVEL();
 
-    xpf::Buffer<xpf::SplitAllocator> sendBuffer;
-    xpf::Buffer<xpf::SplitAllocator> recvBuffer;
-    xpf::Buffer<xpf::SplitAllocator> attributesBuffer;
+    xpf::Buffer sendBuffer{ Output.GetAllocator() };
+    xpf::Buffer recvBuffer{ Output.GetAllocator() };;
+    xpf::Buffer attributesBuffer{ Output.GetAllocator() };;
 
     xpf::StreamReader recvBuffReader{ recvBuffer };
 
@@ -331,7 +331,7 @@ AlpcRpc::AlpcPort::SendReceive(
 _Must_inspect_result_
 NTSTATUS XPF_API
 AlpcRpc::AlpcPort::InitializeMessageAttributes(
-    _Inout_ xpf::Buffer<xpf::SplitAllocator>& AttributesBuffer
+    _Inout_ xpf::Buffer& AttributesBuffer
 ) noexcept(true)
 {
     XPF_MAX_PASSIVE_LEVEL();
@@ -381,7 +381,7 @@ NTSTATUS XPF_API
 AlpcRpc::AlpcPort::InitializePortMessage(
     _In_opt_ _Const_ const void* Buffer,
     _In_ size_t BufferSize,
-    _Inout_ xpf::Buffer<xpf::SplitAllocator>& PortMessage
+    _Inout_ xpf::Buffer& PortMessage
 ) noexcept(true)
 {
     XPF_MAX_PASSIVE_LEVEL();

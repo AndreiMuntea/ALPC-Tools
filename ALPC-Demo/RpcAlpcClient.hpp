@@ -221,11 +221,11 @@ _Must_inspect_result_
 inline NTSTATUS XPF_API
 HelperNdrWstringToWstring(
     _In_ _Const_ const AlpcRpc::DceNdr::DceNdrWstring& NdrString,
-    _Inout_ xpf::String<wchar_t, AlpcRpc::DceNdr::DceAllocator>& String
+    _Inout_ xpf::String<wchar_t>& String
 ) noexcept(true)
 {
     NTSTATUS status = STATUS_UNSUCCESSFUL;
-    xpf::String<wchar_t, AlpcRpc::DceNdr::DceAllocator> newBuffer;
+    xpf::String<wchar_t> newBuffer{ DceAllocator };
 
     size_t length = NdrString.Data().Size();
     for (size_t i = 0; i < length; ++i)
@@ -255,7 +255,7 @@ _Must_inspect_result_
 inline NTSTATUS XPF_API
 HelperUniqueNdrWstringToWstring(
     _In_ _Const_ const AlpcRpc::DceNdr::DceUniquePointer<AlpcRpc::DceNdr::DceNdrWstring>& NdrUniqueString,
-    _Inout_ xpf::String<wchar_t, AlpcRpc::DceNdr::DceAllocator>& String
+    _Inout_ xpf::String<wchar_t>& String
 ) noexcept(true)
 {
     if (nullptr == NdrUniqueString.Data())

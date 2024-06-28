@@ -158,8 +158,7 @@ class PluginManager final
       * @brief  The plugins are simply classes with event listeners capabilities.
       *         They will be created and registered to events
       */
-     xpf::Vector<xpf::SharedPointer<IPlugin, xpf::SplitAllocatorCritical>,
-                 xpf::SplitAllocatorCritical> m_Plugins;
+     xpf::Vector<xpf::SharedPointer<IPlugin>> m_Plugins{ SYSMON_NPAGED_ALLOCATOR };
      /**
       * @brief   Default MemoryAllocator is our friend as it requires access to the private
       *          default constructor. It is used in the Create() method to ensure that

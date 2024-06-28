@@ -155,7 +155,7 @@ class DceRpcUnicodeString : public DceSerializableObject
      _Must_inspect_result_
      inline NTSTATUS XPF_API
      GetBuffer(
-         _Inout_ xpf::String<wchar_t, AlpcRpc::DceNdr::DceAllocator>& StringBuffer
+         _Inout_ xpf::String<wchar_t>& StringBuffer
      ) noexcept(true)
      {
          return HelperUniqueNdrWstringToWstring(this->m_Buffer,

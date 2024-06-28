@@ -57,7 +57,7 @@ class DceNdrEpmTower final : public DceSerializableObject
      {
          XPF_MAX_PASSIVE_LEVEL();
 
-         xpf::Vector<DcePrimitiveType<uint8_t>, DceAllocator> bytesTower;
+         xpf::Vector<DcePrimitiveType<uint8_t>> bytesTower{ DceAllocator };
          const uint8_t* bytes = reinterpret_cast<const uint8_t*>(xpf::AddressOf(Tower));
 
          for (uint32_t i = 0; i < TowerSize; ++i)
@@ -69,8 +69,8 @@ class DceNdrEpmTower final : public DceSerializableObject
              }
          }
 
-         this->m_Tower = xpf::MakeShared<xpf::Vector<DcePrimitiveType<uint8_t>, DceAllocator>,
-                                         DceAllocator>(xpf::Move(bytesTower));
+         this->m_Tower = xpf::MakeSharedWithAllocator<xpf::Vector<DcePrimitiveType<uint8_t>>>(DceAllocator,
+                                                                                              xpf::Move(bytesTower));
          this->m_TowerSize = TowerSize;
      }
 
@@ -150,8 +150,8 @@ class DceNdrEpmTower final : public DceSerializableObject
      {
          XPF_MAX_PASSIVE_LEVEL();
 
-         xpf::Vector<uint8_t, DceAllocator> rawData;
-         xpf::String<wchar_t> endpoint;
+         xpf::Vector<uint8_t> rawData{ DceAllocator };
+         xpf::String<wchar_t> endpoint{ DceAllocator };
 
          LRPC_EPM_TOWER* tower = nullptr;
          NTSTATUS status = STATUS_UNSUCCESSFUL;
@@ -170,7 +170,7 @@ class DceNdrEpmTower final : public DceSerializableObject
          if (!rawData.IsEmpty())
          {
              tower = reinterpret_cast<LRPC_EPM_TOWER*>(xpf::AddressOf(rawData[0]));
-             xpf::String<char, DceAllocator> ansiEndpoint;
+             xpf::String<char> ansiEndpoint{ DceAllocator };
 
              status = ansiEndpoint.Append("\\RPC Control\\");
              if (!NT_SUCCESS(status))
@@ -231,10 +231,10 @@ BindToInterface(
     LRPC_BIND_MESSAGE bindMessageReq = { 0 };
     LRPC_BIND_MESSAGE bindMessageAns = { 0 };
 
-    xpf::Buffer<xpf::SplitAllocator> output;
+    xpf::Buffer output{ DceAllocator };
     xpf::StreamReader outputStream{ output };
 
-    xpf::Buffer<xpf::SplitAllocator> viewOutput;
+    xpf::Buffer viewOutput{ DceAllocator };
 
     BindId = xpf::ApiAtomicIncrement(&gCrtInterfaceBinding);
 
@@ -318,14 +318,14 @@ CallMethod(
     LRPC_RESPONSE_MESSAGE ansMessage = { 0 };
     LRPC_FAULT_MESSAGE faultMessage = { 0 };
 
-    xpf::Buffer<xpf::SplitAllocator> requestBuffer;
+    xpf::Buffer requestBuffer{ DceAllocator };
     xpf::StreamWriter requestBufferWriter{ requestBuffer };
     size_t requestSize = 0;
 
-    xpf::Buffer<xpf::SplitAllocator> responseBuffer;
+    xpf::Buffer responseBuffer{ DceAllocator };
     xpf::StreamReader responseBufferReader{ responseBuffer };
 
-    xpf::Buffer<xpf::SplitAllocator> viewResponseBuffer;
+    xpf::Buffer viewResponseBuffer{ DceAllocator };
     xpf::StreamReader viewResponseBufferReader{ viewResponseBuffer };
 
     //
@@ -409,7 +409,7 @@ CallMethod(
     // And now capture the output - we have two cases - when the output is in a view,
     // and when it is continous memory.
     //
-    xpf::Buffer<DceAllocator> ndrOutParameters;
+    xpf::Buffer ndrOutParameters{ DceAllocator };
 
     if (ansMessage.Flags & LRPC_RESPONSE_FLAG_VIEW_PRESENT)
     {
@@ -668,8 +668,7 @@ AlpcRpc::HelperWstringToNdr(
     NTSTATUS status = STATUS_UNSUCCESSFUL;
 
     /* First we emplace all characters in a DcePrimitiveType wchar_t array. */
-    xpf::Vector<AlpcRpc::DceNdr::DcePrimitiveType<wchar_t>,
-                AlpcRpc::DceNdr::DceAllocator> chars;
+    xpf::Vector<AlpcRpc::DceNdr::DcePrimitiveType<wchar_t>> chars{ DceAllocator };
     for (size_t i = 0; i < View.BufferSize(); ++i)
     {
         status = chars.Emplace(View[i]);
@@ -690,8 +689,8 @@ AlpcRpc::HelperWstringToNdr(
     }
 
     /* Then we make a shared pointer. */
-    auto stringPtr = xpf::MakeShared<xpf::Vector<AlpcRpc::DceNdr::DcePrimitiveType<wchar_t>, AlpcRpc::DceNdr::DceAllocator>,
-                                     AlpcRpc::DceNdr::DceAllocator>(xpf::Move(chars));
+    auto stringPtr = xpf::MakeSharedWithAllocator<xpf::Vector<AlpcRpc::DceNdr::DcePrimitiveType<wchar_t>>>(DceAllocator,
+                                                                                                           xpf::Move(chars));
     if (stringPtr.IsEmpty())
     {
         return STATUS_INSUFFICIENT_RESOURCES;
@@ -720,15 +719,15 @@ AlpcRpc::HelperWstringToUniqueNdr(
 
     NTSTATUS status = STATUS_UNSUCCESSFUL;
     AlpcRpc::DceNdr::DceNdrWstring ndrString;
-    xpf::SharedPointer<AlpcRpc::DceNdr::DceNdrWstring, AlpcRpc::DceNdr::DceAllocator> uniqueNdrString;
+    xpf::SharedPointer<AlpcRpc::DceNdr::DceNdrWstring> uniqueNdrString{ DceAllocator };
 
     status = AlpcRpc::HelperWstringToNdr(View, ndrString, NullTerminateString);
     if (!NT_SUCCESS(status))
     {
         return status;
     }
-    uniqueNdrString = xpf::MakeShared<AlpcRpc::DceNdr::DceNdrWstring,
-                                      AlpcRpc::DceNdr::DceAllocator>(xpf::Move(ndrString));
+    uniqueNdrString = xpf::MakeSharedWithAllocator<AlpcRpc::DceNdr::DceNdrWstring>(DceAllocator,
+                                                                                   xpf::Move(ndrString));
     if (uniqueNdrString.IsEmpty())
     {
         return STATUS_INSUFFICIENT_RESOURCES;

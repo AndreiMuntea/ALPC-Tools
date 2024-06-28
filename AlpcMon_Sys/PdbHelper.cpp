@@ -125,8 +125,8 @@ _IRQL_requires_max_(PASSIVE_LEVEL)
 static NTSTATUS XPF_API
 PdbHelperExtractPdbInformationFromFile(
     _In_ HANDLE FileHandle,
-    _Out_ xpf::String<wchar_t, xpf::SplitAllocator>* PdbGuidAndAge,
-    _Out_ xpf::String<wchar_t, xpf::SplitAllocator>* PdbName
+    _Out_ xpf::String<wchar_t>* PdbGuidAndAge,
+    _Out_ xpf::String<wchar_t>* PdbName
 ) noexcept(true)
 {
     XPF_MAX_PASSIVE_LEVEL();
@@ -147,7 +147,7 @@ PdbHelperExtractPdbInformationFromFile(
     xpf::StringView<wchar_t> bufferView;
     xpf::StringView<char> pdbName;
 
-    xpf::String<wchar_t> widePdbName;
+    xpf::String<wchar_t> widePdbName{ SYSMON_PAGED_ALLOCATOR };
 
     /* The buffer we'll be using for printing data. */
     ::RtlInitEmptyUnicodeString(&ustrBuffer,
@@ -291,7 +291,7 @@ PdbHelperComputePdbFullFilePath(
     _In_ _Const_ const xpf::StringView<wchar_t>& FileName,
     _In_ _Const_ const xpf::StringView<wchar_t>& PdbGuidAndAge,
     _In_ _Const_ const xpf::StringView<wchar_t>& PdbDirectoryPath,
-    _Out_ xpf::String<wchar_t, xpf::SplitAllocator>* PdbFullFilePath
+    _Out_ xpf::String<wchar_t>* PdbFullFilePath
 ) noexcept(true)
 {
     XPF_MAX_PASSIVE_LEVEL();
@@ -312,7 +312,7 @@ PdbHelperComputePdbFullFilePath(
                 return status;                                      \
             }                                                       \
         }
-    #endif // DOXYGEN_SHOULD_SKIP_THIS
+    #endif  // DOXYGEN_SHOULD_SKIP_THIS
 
     /* Construct path. */
     HELPER_APPEND_DATA_TO_STRING(PdbFullFilePath, PdbDirectoryPath);
@@ -359,14 +359,18 @@ PdbHelperResolvePdb(
 {
     XPF_MAX_PASSIVE_LEVEL();
 
-    xpf::String<char, xpf::SplitAllocator> url;
-    xpf::http::HttpResponse response;
-    xpf::SharedPointer<xpf::IClient, xpf::SplitAllocator> client;
+    xpf::String<char> url{ SYSMON_PAGED_ALLOCATOR };
+    xpf::SharedPointer<xpf::IClient> client{ SYSMON_PAGED_ALLOCATOR };
     NTSTATUS status = STATUS_UNSUCCESSFUL;
 
-    xpf::String<char> ansiFileName;
-    xpf::String<char> ansiGuidAndAge;
+    xpf::String<char> ansiFileName{ SYSMON_PAGED_ALLOCATOR };
+    xpf::String<char> ansiGuidAndAge{ SYSMON_PAGED_ALLOCATOR };
     HANDLE fileHandle = NULL;
+
+    xpf::http::HttpResponse response;
+
+    response.ResponseBuffer = xpf::SharedPointer<xpf::Buffer>(SYSMON_PAGED_ALLOCATOR);
+    response.Headers = xpf::Move(xpf::Vector<xpf::http::HeaderItem>(SYSMON_PAGED_ALLOCATOR));
 
     /* Get the ansi name for request. */
     status = xpf::StringConversion::WideToUTF8(FileName, ansiFileName);
@@ -482,7 +486,7 @@ NTSTATUS XPF_API
 PdbHelper::ExtractPdbSymbolInformation(
     _In_ HANDLE FileHandle,
     _In_ _Const_ const xpf::StringView<wchar_t>& PdbDirectoryPath,
-    _Out_ xpf::Vector<xpf::pdb::SymbolInformation, xpf::SplitAllocator>* Symbols
+    _Out_ xpf::Vector<xpf::pdb::SymbolInformation>* Symbols
 ) noexcept(true)
 {
     XPF_MAX_PASSIVE_LEVEL();
@@ -494,9 +498,9 @@ PdbHelper::ExtractPdbSymbolInformation(
     PVOID pdbViewBase = NULL;
     size_t pdbViewSize = 0;
 
-    xpf::String<wchar_t, xpf::SplitAllocator> pdbGuidAndAge;
-    xpf::String<wchar_t, xpf::SplitAllocator> pdbName;
-    xpf::String<wchar_t, xpf::SplitAllocator> pdbFullFilePath;
+    xpf::String<wchar_t> pdbGuidAndAge{ SYSMON_PAGED_ALLOCATOR };
+    xpf::String<wchar_t> pdbName{ SYSMON_PAGED_ALLOCATOR };
+    xpf::String<wchar_t> pdbFullFilePath{ SYSMON_PAGED_ALLOCATOR };
 
     /* Preinit output. */
     Symbols->Clear();

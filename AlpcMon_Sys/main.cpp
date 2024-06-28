@@ -122,11 +122,6 @@ DriverUnload(
     GlobalDataDestroy();
 
     //
-    // Deinitialize split allocator support.
-    //
-    xpf::SplitAllocatorDeinitializeSupport();
-
-    //
     // And lastly, deinitialize the cpp support. This will free all static global data.
     //
     XpfDeinitializeCppSupport();
@@ -174,7 +169,6 @@ DriverEntry(
 
     NTSTATUS status = STATUS_UNSUCCESSFUL;
     BOOLEAN isCppSupportInitialized = FALSE;
-    BOOLEAN isSplitAllocatorSupportInitialized = FALSE;
     BOOLEAN isGlobalDataCreated = FALSE;
 
     BOOLEAN isModuleCollectorCreated = FALSE;
@@ -212,19 +206,6 @@ DriverEntry(
         goto CleanUp;
     }
     isCppSupportInitialized = TRUE;
-
-    //
-    // Prepare split allocator support. This will help reduce
-    // the pressure on memory allocations.
-    //
-    status = xpf::SplitAllocatorInitializeSupport();
-    if (!NT_SUCCESS(status))
-    {
-        SysMonLogError("Failed to initialize split allocator support %!STATUS!",
-                       status);
-        goto CleanUp;
-    }
-    isSplitAllocatorSupportInitialized = TRUE;
 
     //
     // Now the globals - must be done after we have cpp support.
@@ -362,12 +343,6 @@ CleanUp:
         {
             GlobalDataDestroy();
             isGlobalDataCreated = FALSE;
-        }
-
-        if (FALSE != isSplitAllocatorSupportInitialized)
-        {
-            xpf::SplitAllocatorDeinitializeSupport();
-            isSplitAllocatorSupportInitialized = FALSE;
         }
 
         if (FALSE != isCppSupportInitialized)

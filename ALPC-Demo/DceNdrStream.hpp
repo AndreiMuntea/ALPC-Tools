@@ -34,7 +34,8 @@ namespace DceNdr
   *              of the messages. If you only want to DESERIALIZE, well known messages, an ordinary allocator
   *              is more than enough.
   */
-using DceAllocator = xpf::SplitAllocator;
+#define DceAllocator      xpf::PolymorphicAllocator{ .AllocFunction = &xpf::SplitAllocator::AllocateMemory,        \
+                                                      .FreeFunction = &xpf::SplitAllocator::FreeMemory }
 
 /**
  * @brief   This class is used to store serialized data.
@@ -213,7 +214,7 @@ class RwStream final
      *
      * @return          Const reference to the underlying buffer.
      */
-    inline const xpf::Buffer<DceAllocator>& XPF_API
+    inline const xpf::Buffer& XPF_API
     Buffer(
         void
     ) const noexcept(true)
@@ -312,7 +313,7 @@ class RwStream final
     }
 
  private:
-     xpf::Buffer<DceAllocator> m_Buffer;
+     xpf::Buffer m_Buffer{ DceAllocator };
      size_t m_ReadCursor = 0;
      size_t m_WriteCursor = 0;
 };  // class Stream
