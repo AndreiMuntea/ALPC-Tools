@@ -214,7 +214,6 @@ enum class HashType
  *
  * @param[in]      FileHandle  - A handle to the opened file.
  * @param[in]      HashType    - One of the HashType values.
- * @param[in,out]  Hash        - The buffer containing the hash on success.
  *
  * @return         A proper NTSTATUS error code.
  *

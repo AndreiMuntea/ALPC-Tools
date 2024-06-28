@@ -372,19 +372,6 @@ class ModuleCollector final
             }
         }
 
-        /* Check if we exceeded the size - we need to start dropping the older modules. */
-        if (this->m_Modules.Size() > this->MAX_MODULES)
-        {
-            while (this->m_Modules.Size() > this->MAX_MODULES / 2)
-            {
-                NTSTATUS status = this->m_Modules.Erase(0);
-                if (!NT_SUCCESS(status))
-                {
-                    return status;
-                }
-            }
-        }
-
         /* Create a new module. */
         newmodule = xpf::MakeShared<SysMon::ModuleData, xpf::SplitAllocator>(xpf::Move(ModulePath),
                                                                              PathHash,
@@ -546,12 +533,6 @@ class ModuleCollector final
     xpf::LookasideListAllocator m_ModuleContextAllocator;
     xpf::Optional<KmHelper::WorkQueue> m_ModulesWorkQueue;
     bool m_IsQueueRunDown = false;
-
-    /**
-     * @brief   We don't have an infinity of memory. So we are going to limit the number of modules that we store.
-     *          When we exceed this number, we'll start dropping them indiscriminately.
-     */
-    static constexpr size_t MAX_MODULES = 256;
 
     /**
      * @brief   Default MemoryAllocator is our friend as it requires access to the private

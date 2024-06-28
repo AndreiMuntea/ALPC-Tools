@@ -640,7 +640,6 @@ KmHelper::File::HashFile(
     BOOLEAN isHashHandleCreated = FALSE;
 
     LPCWSTR algorithmId = NULL;
-    uint8_t data[32] = { 0 };
 
     uint32_t hashLength = 0;
     ULONG cbResultPropertyLength = 0;
@@ -703,27 +702,19 @@ KmHelper::File::HashFile(
     /* And now start hashing. */
     for (size_t i = 0; i < viewSize; )
     {
-        /* Read in chunks of arraysize(data) bytes. */
-        const size_t sizeToRead = (viewSize - sizeof(data) > i) ? sizeof(data)
-                                                                : viewSize - i;
+        /* Read in chunks of max value accepted by crypt hash data . */
+        const size_t dataSize = xpf::NumericLimits<uint32_t>::MaxValue();
+        const size_t sizeToRead = (viewSize > dataSize && viewSize - dataSize > i) ? dataSize
+                                                                                   : viewSize - i;
         if (sizeToRead >= xpf::NumericLimits<uint32_t>::MaxValue())
         {
             status = STATUS_INVALID_BUFFER_SIZE;
             goto CleanUp;
         }
 
-        /* Read-writes from views can cause seh errors. */
-        status = KmHelper::HelperSafeWriteBuffer(data,
-                                                 xpf::AlgoAddToPointer(viewBase, i),
-                                                 sizeToRead);
-        if (!NT_SUCCESS(status))
-        {
-            goto CleanUp;
-        }
-
         /* Update the hash. */
         status = ::BCryptHashData(hashHandle,
-                                  data,
+                                  static_cast<PUCHAR>(xpf::AlgoAddToPointer(viewBase, i)),
                                   static_cast<uint32_t>(sizeToRead),
                                   0);
         if (!NT_SUCCESS(status))
