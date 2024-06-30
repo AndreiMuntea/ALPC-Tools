@@ -131,7 +131,7 @@ FirmwareTableHandlerChangeRoutine(
     handler.FirmwareTableHandler = &FirmwareTableHandlerCallback;
     handler.DriverObject = DriverObject;
 
-    return ::ZwSetSystemInformation(SYSTEM_INFORMATION_CLASS::SystemRegisterFirmwareTableInformationHandler,
+    return ::ZwSetSystemInformation(XPF_SYSTEM_INFORMATION_CLASS::XpfSystemRegisterFirmwareTableInformationHandler,
                                     &handler,
                                     sizeof(handler));
 }

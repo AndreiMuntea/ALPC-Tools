@@ -791,7 +791,7 @@ wmain(
     while (true)
     {
         /* Read the command. */
-        char command[0x1000] = { 0 };
+        char command[1000] = { 0 };
         printf("Please input the command:\r\n");
         gets_s(command, sizeof(command));
 

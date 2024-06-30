@@ -607,12 +607,15 @@ ModuleCollectorWorkerCallback(
     }
 
     /* Hash the file. */
-    status = KmHelper::File::HashFile(fileHandle,
-                                      hashType,
-                                      hash);
-    if (!NT_SUCCESS(status))
+    if (data->Path.View().EndsWith(L".exe", false))
     {
-        goto CleanUp;
+        status = KmHelper::File::HashFile(fileHandle,
+                                          hashType,
+                                          hash);
+        if (!NT_SUCCESS(status))
+        {
+            goto CleanUp;
+        }
     }
 
     /* If this is a windows module we try to retrieve .pdb information */

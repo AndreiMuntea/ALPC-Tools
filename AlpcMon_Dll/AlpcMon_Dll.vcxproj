@@ -125,6 +125,7 @@
       <CompileAs>Default</CompileAs>
       <ControlFlowGuard>Guard</ControlFlowGuard>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <AdditionalOptions>/analyze:stacksize 8192 /guard:xfg %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -167,6 +168,7 @@
       <ExceptionHandling>false</ExceptionHandling>
       <CompileAs>Default</CompileAs>
       <ControlFlowGuard>Guard</ControlFlowGuard>
+      <AdditionalOptions>/analyze:stacksize 8192 /guard:xfg %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -212,7 +214,7 @@
       <ControlFlowGuard>Guard</ControlFlowGuard>
       <GuardEHContMetadata>true</GuardEHContMetadata>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <AdditionalOptions>/guard:xfg %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>/analyze:stacksize 8192 /guard:xfg %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -257,7 +259,7 @@
       <CompileAs>Default</CompileAs>
       <ControlFlowGuard>Guard</ControlFlowGuard>
       <GuardEHContMetadata>true</GuardEHContMetadata>
-      <AdditionalOptions>/guard:xfg %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>/analyze:stacksize 8192 /guard:xfg %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>

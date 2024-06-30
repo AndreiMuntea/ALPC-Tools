@@ -125,7 +125,7 @@ GlobalDataGetOsVersion(
 {
     XPF_MAX_DISPATCH_LEVEL();
 
-    return &gGlobalData->OsVersion;
+    return xpf::AddressOf(gGlobalData->OsVersion);
 }
 
 
@@ -146,7 +146,7 @@ GlobalDataGetDynamicData(
 {
     XPF_MAX_DISPATCH_LEVEL();
 
-    return &gGlobalData->DynamicExportData;
+    return xpf::AddressOf(gGlobalData->DynamicExportData);
 }
 
 
@@ -312,7 +312,7 @@ GlobalDataCreate(
     // Find info about the running OS version.
     //
     gGlobalData->OsVersion.dwOSVersionInfoSize = sizeof(gGlobalData->OsVersion);
-    status = ::RtlGetVersion(reinterpret_cast<PRTL_OSVERSIONINFOW>(&gGlobalData->OsVersion));
+    status = ::RtlGetVersion(reinterpret_cast<PRTL_OSVERSIONINFOW>(xpf::AddressOf(gGlobalData->OsVersion)));
     if (!NT_SUCCESS(status))
     {
         SysMonLogError("RtlGetVersion failed with %!STATUS!",

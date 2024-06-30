@@ -141,7 +141,7 @@
       <FavorSizeOrSpeed>Size</FavorSizeOrSpeed>
       <IntelJCCErratum>true</IntelJCCErratum>
       <EnforceTypeConversionRules>true</EnforceTypeConversionRules>
-      <AdditionalOptions>/kernel /INTEGRITYCHECK /d1nodatetime %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>/kernel /INTEGRITYCHECK /analyze:stacksize 512 /d1nodatetime %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <PostBuildEvent>
       <Command>
@@ -199,7 +199,7 @@
       <IntrinsicFunctions>false</IntrinsicFunctions>
       <IntelJCCErratum>true</IntelJCCErratum>
       <EnforceTypeConversionRules>true</EnforceTypeConversionRules>
-      <AdditionalOptions>/kernel /INTEGRITYCHECK /d1nodatetime %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>/kernel /INTEGRITYCHECK /analyze:stacksize 512 /d1nodatetime %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <PostBuildEvent>
       <Command>
@@ -259,7 +259,7 @@
       <FavorSizeOrSpeed>Size</FavorSizeOrSpeed>
       <IntelJCCErratum>true</IntelJCCErratum>
       <EnforceTypeConversionRules>true</EnforceTypeConversionRules>
-      <AdditionalOptions>/kernel /INTEGRITYCHECK /d1nodatetime /d2guardretpoline %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>/kernel /INTEGRITYCHECK /analyze:stacksize 512 /d1nodatetime /d2guardretpoline %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <PostBuildEvent>
       <Command>
@@ -318,7 +318,7 @@
       <IntrinsicFunctions>false</IntrinsicFunctions>
       <IntelJCCErratum>true</IntelJCCErratum>
       <EnforceTypeConversionRules>true</EnforceTypeConversionRules>
-      <AdditionalOptions>/kernel /INTEGRITYCHECK /d1nodatetime /d2guardretpoline %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>/kernel /INTEGRITYCHECK /analyze:stacksize 512 /d1nodatetime /d2guardretpoline %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <PostBuildEvent>
       <Command>
