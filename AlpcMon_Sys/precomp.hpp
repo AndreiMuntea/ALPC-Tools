@@ -22,10 +22,10 @@
  * @brief   The default allocator to be used when dealing with paged allocations.
  */
 #define SYSMON_PAGED_ALLOCATOR      xpf::PolymorphicAllocator{ .AllocFunction = &xpf::SplitAllocator::AllocateMemory,        \
-                                                               .FreeFunction = &xpf::SplitAllocator::FreeMemory }
+                                                               .FreeFunction  = &xpf::SplitAllocator::FreeMemory }
 
 /**
  * @brief   The default allocator to be used when dealing with non paged allocations.
  */
 #define SYSMON_NPAGED_ALLOCATOR     xpf::PolymorphicAllocator{ .AllocFunction = &xpf::SplitAllocatorCritical::AllocateMemory, \
-                                                               .FreeFunction = &xpf::SplitAllocatorCritical::FreeMemory }
+                                                               .FreeFunction  = &xpf::SplitAllocatorCritical::FreeMemory }
