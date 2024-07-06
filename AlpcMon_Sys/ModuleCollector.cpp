@@ -557,65 +557,6 @@ class ModuleCollector final
  */
 static SysMon::ModuleCollector* gModuleCollector = nullptr;
 
-static void XPF_API
-ModuleCollectorGatherSystemModulesCallback(
-    _In_opt_ xpf::thread::CallbackArgument Argument
-) noexcept(true)
-{
-    /* The routine can be called only at max PASSIVE_LEVEL from worker thread. */
-    XPF_MAX_PASSIVE_LEVEL();
-
-    /* This is not required. */
-    XPF_UNREFERENCED_PARAMETER(Argument);
-
-    NTSTATUS status = STATUS_UNSUCCESSFUL;
-    xpf::Buffer modulesBuffer{ SYSMON_PAGED_ALLOCATOR };
-    XPF_RTL_PROCESS_MODULES* processModules = nullptr;
-
-    /* We may need to do this in a loop as we don't know how much memory to preallocate. */
-    for (size_t i = 1; i <= 100; ++i)
-    {
-        status = modulesBuffer.Resize(i * PAGE_SIZE);
-        if (!NT_SUCCESS(status))
-        {
-            return;
-        }
-
-        ULONG informationLength = 0;
-        status = ::ZwQuerySystemInformation(XPF_SYSTEM_INFORMATION_CLASS::XpfSystemModuleInformation,
-                                            modulesBuffer.GetBuffer(),
-                                            static_cast<ULONG>(modulesBuffer.GetSize()),
-                                            &informationLength);
-        if (NT_SUCCESS(status))
-        {
-            /* Snapshotted the modules. */
-            break;
-        }
-    }
-
-    /* Could not snapshot the modules. */
-    if (!NT_SUCCESS(status))
-    {
-        return;
-    }
-
-    /* Success */
-    processModules = static_cast<XPF_RTL_PROCESS_MODULES*>(modulesBuffer.GetBuffer());
-
-    /* Walk all modules and best effort cache them. */
-    for (ULONG i = 0; i < processModules->NumberOfModules; ++i)
-    {
-        xpf::StringView ansiModulePath{ processModules->Modules[i].FullPathName };
-        xpf::String<wchar_t> wideModulePath{ SYSMON_PAGED_ALLOCATOR };
-
-        status = xpf::StringConversion::UTF8ToWide(ansiModulePath,
-                                                   wideModulePath);
-        if (NT_SUCCESS(status))
-        {
-            ModuleCollectorHandleNewModule(wideModulePath.View());
-        }
-    }
-}
 
 static void XPF_API
 ModuleCollectorWorkerCallback(
@@ -753,11 +694,6 @@ ModuleCollectorCreate(
         SysMonLogError("Insufficient resources to create the module collector!");
         return STATUS_INSUFFICIENT_RESOURCES;
     }
-
-    /* Start gathering system modules. This will be async. */
-    gModuleCollector->WorkQueue().EnqueueWork(ModuleCollectorGatherSystemModulesCallback,
-                                              nullptr,
-                                              false);
 
     SysMonLogInfo("Successfully created the module collector!");
     return STATUS_SUCCESS;

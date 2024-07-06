@@ -419,13 +419,19 @@ QueryFileNameFromObjectFallback(
     XPF_MAX_PASSIVE_LEVEL();
 
     FileObjectFileNameContext context;
-    KmHelper::WorkQueue workQueue;
+    xpf::thread::Thread asyncThread;
+    NTSTATUS status = STATUS_UNSUCCESSFUL;
 
     context.FileObject = FileObject;
 
-    workQueue.EnqueueWork(QueryFileNameFromObjectWorker,
-                          &context,
-                          true);
+    status = asyncThread.Run(QueryFileNameFromObjectWorker,
+                             &context);
+    if (!NT_SUCCESS(status))
+    {
+        return status;
+    }
+
+    asyncThread.Join();
     if (!NT_SUCCESS(context.status))
     {
         return context.status;

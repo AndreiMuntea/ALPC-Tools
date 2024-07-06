@@ -194,7 +194,8 @@ KmHelper::WorkQueue::EnqueueWork(
 
         /* Run the work item. */
         ::ExQueueWorkItem(&item->WorkItem,
-                          WORK_QUEUE_TYPE::BackgroundWorkQueue);
+                          (Wait) ? WORK_QUEUE_TYPE::RealTimeWorkQueue
+                                 : WORK_QUEUE_TYPE::CriticalWorkQueue);
     }
 
     /* Re-enable deprecation warning. */
