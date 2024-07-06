@@ -296,13 +296,23 @@ DriverEntry(
 
 CleanUp:
     //
+    // We mark that filtering registration is finished,
+    // even if we are exiting with an error. This is because
+    // the OS will wait on rundown for on-going routines,
+    // so we have to unblock them here.
+    //
+    if (FALSE != isGlobalDataCreated)
+    {
+        GlobalDataMarkFilteringRegistrationFinished();
+    }
+
+    //
     // On fail, be a good citizen and rollback everything.
     //
     if (!NT_SUCCESS(status))
     {
         SysMonLogError("Failed to load driver with %!STATUS!. Commencing rollback!",
                        status);
-
         if (FALSE != isFirmareTableHandleFilterRoutineRegistered)
         {
             FirmwareTableHandlerFilterStop(DriverObject);

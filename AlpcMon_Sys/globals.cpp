@@ -80,6 +80,13 @@ struct GlobalData
      * @brief   The driver object describing our driver.
      */
     void* DriverObject = nullptr;
+    /**
+     * @brief   A boolean used to indicate whether all filtering routine
+     *          were properly registered. Can be used to prevent filtering notification
+     *          from happening until all routines are properly registered, thus ensuring
+     *          a consistent overall state.
+     */
+    bool IsFilteringRegistrationFinished = false;
 };  // struct GlobalData
 
 /**
@@ -208,6 +215,44 @@ GlobalDataGetDriverObject(
 
     return gGlobalData->DriverObject;
 }
+
+//
+// -------------------------------------------------------------------------------------------------------------------
+// | ****************************************************************************************************************|
+// |                                       GlobalDataMarkFilteringRegistrationFinished                               |
+// | ****************************************************************************************************************|
+// -------------------------------------------------------------------------------------------------------------------
+//
+
+_Use_decl_annotations_
+void XPF_API
+GlobalDataMarkFilteringRegistrationFinished(
+    void
+) noexcept(true)
+{
+    XPF_MAX_DISPATCH_LEVEL();
+
+    gGlobalData->IsFilteringRegistrationFinished = true;
+}
+
+//
+// -------------------------------------------------------------------------------------------------------------------
+// | ****************************************************************************************************************|
+// |                                       GlobalDataIsFilteringRegistrationFinished                                 |
+// | ****************************************************************************************************************|
+// -------------------------------------------------------------------------------------------------------------------
+//
+_Use_decl_annotations_
+bool XPF_API
+GlobalDataIsFilteringRegistrationFinished(
+    void
+) noexcept(true)
+{
+    XPF_MAX_DISPATCH_LEVEL();
+
+    return gGlobalData->IsFilteringRegistrationFinished;
+}
+
 
 ///
 /// -------------------------------------------------------------------------------------------------------------------

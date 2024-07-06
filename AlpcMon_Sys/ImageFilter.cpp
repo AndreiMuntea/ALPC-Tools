@@ -146,6 +146,14 @@ ImageFilterImageLoadNotifyRoutineCallback(
     PIMAGE_INFO_EX imageInfoExtended = nullptr;
 
     //
+    // Until all notifications are registered, we block new routines here.
+    //
+    while (!GlobalDataIsFilteringRegistrationFinished())
+    {
+        xpf::ApiSleep(100);
+    }
+
+    //
     // Extended info flag must always be present from Vista+.
     // So assert here and bail early.
     //

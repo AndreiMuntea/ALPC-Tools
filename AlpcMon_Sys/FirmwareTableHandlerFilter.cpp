@@ -53,6 +53,14 @@ FirmwareTableHandlerCallback(
     XPF_MAX_PASSIVE_LEVEL();
 
     //
+    // Until all notifications are registered, we block new routines here.
+    //
+    while (!GlobalDataIsFilteringRegistrationFinished())
+    {
+        xpf::ApiSleep(100);
+    }
+
+    //
     // Sanity check.
     //
     if (NULL == TableInfo)

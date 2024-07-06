@@ -84,16 +84,10 @@ typedef NTSTATUS (NTAPI *PFUNC_PsSetCreateProcessNotifyRoutineEx2)(
  */
 static volatile PFUNC_PsSetCreateProcessNotifyRoutineEx2 gApiPsSetCreateProcessNotifyRoutineEx2 = nullptr;
 
-/**
- * @brief   A global variable used to block the creation of new processes until the current running ones
- *          are collected and properly handled.
- */
-static volatile bool gIsProcessPreexistingInformationCollected = false;
-
 ///
 /// -------------------------------------------------------------------------------------------------------------------
 /// | ****************************************************************************************************************|
-/// |                              Forwrd definition of methods private to this module only.                          |
+/// |                              Forward definition of methods private to this module only.                         |
 /// |                              Skipped by doxygen as they are annotated below.                                    |
 /// | ****************************************************************************************************************|
 /// -------------------------------------------------------------------------------------------------------------------
@@ -155,9 +149,9 @@ ProcessFilterProcessNotifyRoutineCallback(
     SysMon::ProcessArchitecture architecture = SysMon::ProcessArchitecture::MAX;
 
     //
-    // Until all processes are collected, we block new routines here.
+    // Until all notifications are registered, we block new routines here.
     //
-    while (!gIsProcessPreexistingInformationCollected)
+    while (!GlobalDataIsFilteringRegistrationFinished())
     {
         xpf::ApiSleep(100);
     }
@@ -522,11 +516,6 @@ ProcessFilterStart(
     SysMonLogInfo("Registering process notification routine...");
 
     //
-    // Mark that preexisting processes are not yet gathered.
-    //
-    gIsProcessPreexistingInformationCollected = false;
-
-    //
     // First we check if we can use the newer method.
     //
     gApiPsSetCreateProcessNotifyRoutineEx2 = static_cast<PFUNC_PsSetCreateProcessNotifyRoutineEx2>(
@@ -560,9 +549,9 @@ ProcessFilterStart(
 
     //
     // Now gather information about the preexisting processes.
+    // We do it inline with the registration, to prevent new notifications from happening.
     //
     ProcessFilterGatherPreexistingProcesses();
-    gIsProcessPreexistingInformationCollected = true;
 
     //
     // All good.

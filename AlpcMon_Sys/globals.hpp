@@ -106,6 +106,29 @@ GlobalDataGetDriverObject(
     void
 ) noexcept(true);
 
+/**
+ * @brief       Notify global data that all filtering routines are properly set.
+ *
+ * @return      Nothing
+ */
+_IRQL_requires_max_(DISPATCH_LEVEL)
+void XPF_API
+GlobalDataMarkFilteringRegistrationFinished(
+    void
+) noexcept(true);
+
+/**
+ * @brief       Used to retrieve the state of filtering notification routines.
+ *
+ * @return      True if filtering registration was finished,
+ *              false otherwise.
+ */
+_IRQL_requires_max_(DISPATCH_LEVEL)
+bool XPF_API
+GlobalDataIsFilteringRegistrationFinished(
+    void
+) noexcept(true);
+
 ///
 /// -------------------------------------------------------------------------------------------------------------------
 /// | ****************************************************************************************************************|

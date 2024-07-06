@@ -152,6 +152,14 @@ ThreadFilterThreadNotifyRoutineCallback(
     HANDLE currentProcessPid = ::PsGetCurrentProcessId();
     HANDLE currentThreadTid = ::PsGetCurrentThreadId();
 
+    //
+    // Until all notifications are registered, we block new routines here.
+    //
+    while (!GlobalDataIsFilteringRegistrationFinished())
+    {
+        xpf::ApiSleep(100);
+    }
+
     if (FALSE != Create)    /* Thread creation. */
     {
         SysMonLogTrace("Thread with tid %d is created in process with pid %d. "
@@ -237,6 +245,14 @@ ThreadFilterThreadExecuteRoutineCallback(
 
     HANDLE currentProcessPid = ::PsGetCurrentProcessId();
     HANDLE currentThreadTid = ::PsGetCurrentThreadId();
+
+    //
+    // Until all notifications are registered, we block new routines here.
+    //
+    while (!GlobalDataIsFilteringRegistrationFinished())
+    {
+        xpf::ApiSleep(100);
+    }
 
     //
     // For now we just log a message here - not really setting context or doing any work.
