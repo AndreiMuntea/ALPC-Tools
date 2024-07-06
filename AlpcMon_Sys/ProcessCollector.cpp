@@ -183,8 +183,7 @@ class ProcessData final
         /* Path should not be empty. */
         XPF_DEATH_ON_FAILURE(!this->m_ProcessPath.IsEmpty());
 
-        /* Process Id should be a multiple of 4 and non-null. */
-        XPF_DEATH_ON_FAILURE(0 != ProcessId);
+        /* Process Id should be a multiple of 4. */
         XPF_DEATH_ON_FAILURE(ProcessId % 4 == 0);
     }
 
@@ -650,6 +649,7 @@ class ProcessCollector final
      )
      {
          XPF_MAX_APC_LEVEL();
+
          xpf::SharedPointer<SysMon::ProcessData> result{ SYSMON_PAGED_ALLOCATOR };
          xpf::Optional<size_t> index;
 
@@ -667,6 +667,7 @@ class ProcessCollector final
  private:
     xpf::Optional<xpf::ReadWriteLock> m_ProcessesLock;
     xpf::Vector<xpf::SharedPointer<SysMon::ProcessData>> m_Processes{ SYSMON_PAGED_ALLOCATOR };
+
     /**
      * @brief   This is a friend class as it needs access so it can properly initialize
      *          the object so we won't return partially constructed objects.
@@ -685,7 +686,6 @@ class ProcessCollector final
  * @brief   Global instance containing process data.
  */
 static SysMon::ProcessCollector* gProcessCollector = nullptr;
-
 
 _Use_decl_annotations_
 NTSTATUS XPF_API

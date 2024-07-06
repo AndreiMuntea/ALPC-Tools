@@ -84,6 +84,12 @@ typedef NTSTATUS (NTAPI *PFUNC_PsSetCreateProcessNotifyRoutineEx2)(
  */
 static volatile PFUNC_PsSetCreateProcessNotifyRoutineEx2 gApiPsSetCreateProcessNotifyRoutineEx2 = nullptr;
 
+/**
+ * @brief   A global variable used to block the creation of new processes until the current running ones
+ *          are collected and properly handled.
+ */
+static volatile bool gIsProcessPreexistingInformationCollected = false;
+
 ///
 /// -------------------------------------------------------------------------------------------------------------------
 /// | ****************************************************************************************************************|
@@ -148,6 +154,17 @@ ProcessFilterProcessNotifyRoutineCallback(
     xpf::UniquePointer<xpf::IEvent> broadcastEvent{ SYSMON_PAGED_ALLOCATOR };
     SysMon::ProcessArchitecture architecture = SysMon::ProcessArchitecture::MAX;
 
+    //
+    // Until all processes are collected, we block new routines here.
+    //
+    while (!gIsProcessPreexistingInformationCollected)
+    {
+        xpf::ApiSleep(100);
+    }
+
+    //
+    // Grab the architecture.
+    //
     if constexpr (SysMon::CurrentOsArchitecture() == SysMon::OsArchitecture::ix86)
     {
         architecture = SysMon::ProcessArchitecture::x86;
@@ -253,6 +270,232 @@ ProcessFilterProcessNotifyRoutineCallback(
     }
 }
 
+/**
+ * @brief       Given an opend process handle, it retrieves the image path.
+ *
+ * @param[in]   ProcessHandle - handle to the opened process.
+ * @param[out]  ImagePath     - the path of the image.
+ *
+ * @return      A proper NTSTATUS error code.
+ */
+static NTSTATUS XPF_API
+ProcessFilterGetProcessImagePath(
+    _In_ HANDLE ProcessHandle,
+    _Out_ xpf::String<wchar_t>* ImagePath
+) noexcept(true)
+{
+    /* The routine can be called only at max PASSIVE_LEVEL. */
+    XPF_MAX_PASSIVE_LEVEL();
+
+    /* Preinit output. */
+    ImagePath->Reset();
+
+    NTSTATUS status = STATUS_UNSUCCESSFUL;
+    ULONG informationLength = 0;
+
+    xpf::Buffer processImageBuffer{ ImagePath->GetAllocator() };
+    xpf::StringView<wchar_t> processImageView;
+
+    /* We may need to do this in a loop as we don't know how much memory to preallocate. */
+    for (size_t i = 1; i <= 100; ++i)
+    {
+        status = processImageBuffer.Resize(i * PAGE_SIZE);
+        if (!NT_SUCCESS(status))
+        {
+            return status;
+        }
+        status = ::ZwQueryInformationProcess(ProcessHandle,
+                                             PROCESSINFOCLASS::ProcessImageFileName,
+                                             processImageBuffer.GetBuffer(),
+                                             static_cast<ULONG>(processImageBuffer.GetSize()),
+                                             &informationLength);
+        if (NT_SUCCESS(status))
+        {
+            /* Grabbed the image name. */
+            break;
+        }
+    }
+    if (!NT_SUCCESS(status))
+    {
+        return status;
+    }
+
+    /* Grab a friendlier view. */
+    status = KmHelper::HelperUnicodeStringToView(*static_cast<UNICODE_STRING*>(processImageBuffer.GetBuffer()),
+                                                 processImageView);
+    if (!NT_SUCCESS(status))
+    {
+        return status;
+    }
+
+    /* And send it to output. */
+    return ImagePath->Append(processImageView);
+}
+
+/**
+ * @brief       Given an opend process object, it retrieves the image name,
+ *              as stored in the EPROCESS.
+ *
+ * @param[in]   Process       - The opened eprocess
+ * @param[out]  ImageName     - the image name.
+ *
+ * @return      A proper NTSTATUS error code.
+ */
+static NTSTATUS XPF_API
+ProcessFilterGetProcessImageName(
+    _In_ PEPROCESS Process,
+    _Out_ xpf::String<wchar_t>* ImageName
+) noexcept(true)
+{
+    /* The routine can be called only at max PASSIVE_LEVEL. */
+    XPF_MAX_PASSIVE_LEVEL();
+
+    /* Preinit output. */
+    ImageName->Reset();
+
+    /* Grab the unicode variant of the image name. */
+    return xpf::StringConversion::UTF8ToWide(::PsGetProcessImageFileName(Process),
+                                             *ImageName);
+}
+
+/**
+ * @brief   This routine is used to gather information about the already running processes.
+ *          We will block the creation of new ones until this is finished.
+ *          This must be called after registering the notification.
+ */
+static void XPF_API
+ProcessFilterGatherPreexistingProcesses(
+    void
+) noexcept(true)
+{
+    /* The routine can be called only at max PASSIVE_LEVEL. */
+    XPF_MAX_PASSIVE_LEVEL();
+
+    NTSTATUS status = STATUS_UNSUCCESSFUL;
+    xpf::Buffer processBuffer{ SYSMON_PAGED_ALLOCATOR };
+    XPF_SYSTEM_PROCESS_INFORMATION* processInformation = nullptr;
+
+    /* We may need to do this in a loop as we don't know how much memory to preallocate. */
+    for (size_t i = 1; i <= 100; ++i)
+    {
+        status = processBuffer.Resize(i * PAGE_SIZE);
+        if (!NT_SUCCESS(status))
+        {
+            return;
+        }
+
+        ULONG informationLength = 0;
+        status = ::ZwQuerySystemInformation(XPF_SYSTEM_INFORMATION_CLASS::XpfSystemProcessInformation,
+                                            processBuffer.GetBuffer(),
+                                            static_cast<ULONG>(processBuffer.GetSize()),
+                                            &informationLength);
+        if (NT_SUCCESS(status))
+        {
+            /* Snapshotted the processes. */
+            break;
+        }
+    }
+
+    /* Could not snapshot the processes. */
+    if (!NT_SUCCESS(status))
+    {
+        return;
+    }
+
+    /* Success */
+    processInformation = static_cast<XPF_SYSTEM_PROCESS_INFORMATION*>(processBuffer.GetBuffer());
+
+
+    /* Walk all processes and best effort cache them. */
+    while(processInformation != nullptr)
+    {
+        xpf::String<wchar_t> processPath{ SYSMON_PAGED_ALLOCATOR };
+        PEPROCESS processObject = nullptr;
+        HANDLE processHandle = nullptr;
+
+        /* We're entering a new process loop. */
+        status = STATUS_SUCCESS;
+
+        /* If the process is the idle process we handle it separately. */
+        /* This process can't be opened like a normal process. */
+        if (processInformation->UniqueProcessId == 0)
+        {
+            ProcessCollectorHandleCreateProcess(HandleToULong(processInformation->UniqueProcessId),
+                                                L"idle");
+            goto ContinueLoop;
+        }
+
+        /* Find the associated eprocess. */
+        status = ::PsLookupProcessByProcessId(processInformation->UniqueProcessId,
+                                              &processObject);
+        if (!NT_SUCCESS(status))
+        {
+            goto ContinueLoop;
+        }
+
+        /* Grab a handle to the eprocess. */
+        status = ::ObOpenObjectByPointer(processObject,
+                                         OBJ_KERNEL_HANDLE,
+                                         NULL,
+                                         PROCESS_ALL_ACCESS,
+                                         *PsProcessType,
+                                         KernelMode,
+                                         &processHandle);
+        if (!NT_SUCCESS(status))
+        {
+            goto ContinueLoop;
+        }
+
+        /* Grab the image path. */
+        status = ProcessFilterGetProcessImagePath(processHandle,
+                                                  &processPath);
+        if (NT_SUCCESS(status))
+        {
+            /* If the path is empty, we'll only grab the name - can happen for registry or other system processes. */
+            if (processPath.IsEmpty())
+            {
+                status = ProcessFilterGetProcessImageName(processObject,
+                                                          &processPath);
+            }
+        }
+        if (!NT_SUCCESS(status))
+        {
+            goto ContinueLoop;
+        }
+
+        /* Add it to collector. */
+        ProcessCollectorHandleCreateProcess(HandleToULong(processInformation->UniqueProcessId),
+                                            processPath.View());
+
+    ContinueLoop:
+        if (processHandle != nullptr)
+        {
+            NTSTATUS closeStatus = ::ObCloseHandle(processHandle,
+                                                   KernelMode);
+            processHandle = nullptr;
+            XPF_DEATH_ON_FAILURE(NT_SUCCESS(closeStatus));
+        }
+        if (processObject != nullptr)
+        {
+            ::ObDereferenceObjectDeferDelete(processObject);
+            processObject = nullptr;
+        }
+
+        if (!NT_SUCCESS(status))
+        {
+            SysMonLogWarning("Failed to gather information about the process with pid %d (%wZ) %!STATUS!",
+                             HandleToULong(processInformation->UniqueProcessId),
+                             &processInformation->ImageName,
+                             status);
+        }
+
+        void* next = (processInformation->NextEntryOffset != 0) ? xpf::AlgoAddToPointer(processInformation,
+                                                                                        processInformation->NextEntryOffset)
+                                                                : nullptr;
+        processInformation = static_cast<XPF_SYSTEM_PROCESS_INFORMATION*>(next);
+    }
+}
+
 //
 // -------------------------------------------------------------------------------------------------------------------
 // | ****************************************************************************************************************|
@@ -277,6 +520,11 @@ ProcessFilterStart(
     NTSTATUS status = STATUS_UNSUCCESSFUL;
 
     SysMonLogInfo("Registering process notification routine...");
+
+    //
+    // Mark that preexisting processes are not yet gathered.
+    //
+    gIsProcessPreexistingInformationCollected = false;
 
     //
     // First we check if we can use the newer method.
@@ -309,6 +557,12 @@ ProcessFilterStart(
                        status);
         return status;
     }
+
+    //
+    // Now gather information about the preexisting processes.
+    //
+    ProcessFilterGatherPreexistingProcesses();
+    gIsProcessPreexistingInformationCollected = true;
 
     //
     // All good.

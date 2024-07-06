@@ -183,11 +183,7 @@ ImageFilterImageLoadNotifyRoutineCallback(
                                         : false;
     if (isKernelImage)
     {
-        //
-        // System process has PID 4 - always. So we'll dispatch
-        // the event with pid = 4 as it belongs in system process.
-        //
-        ProcessId = UlongToHandle(4);
+        ProcessId = ::PsGetProcessId(PsInitialSystemProcess);
     }
 
     //
