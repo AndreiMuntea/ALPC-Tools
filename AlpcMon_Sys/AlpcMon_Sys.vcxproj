@@ -349,6 +349,7 @@
     <FilesToPackage Include="$(TargetPath)" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="ApcQueue.cpp" />
     <ClCompile Include="CppSupport.cpp" />
     <ClCompile Include="Events.cpp" />
     <ClCompile Include="FirmwareTableHandlerFilter.cpp" />
@@ -386,6 +387,7 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="ApcQueue.hpp" />
     <ClInclude Include="CppSupport.hpp" />
     <ClInclude Include="Events.hpp" />
     <ClInclude Include="FirmwareTableHandlerFilter.hpp" />

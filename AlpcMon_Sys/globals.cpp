@@ -378,6 +378,12 @@ GlobalDataCreate(
                                                                   KmHelper::WrapperMmGetSystemRoutine(L"PsIsProtectedProcessLight"));       // NOLINT(*)
     gGlobalData->DynamicExportData.ApiPsGetProcessWow64Process = static_cast<PFUNC_PsGetProcessWow64Process>(
                                                                  KmHelper::WrapperMmGetSystemRoutine(L"PsGetProcessWow64Process"));         // NOLINT(*)
+    gGlobalData->DynamicExportData.ApiKeRemoveQueueApc = static_cast<PFUNC_KeRemoveQueueApc>(
+                                                         KmHelper::WrapperMmGetSystemRoutine(L"KeRemoveQueueApc"));                         // NOLINT(*)
+    gGlobalData->DynamicExportData.ApiKeInitializeApc = static_cast<PFUNC_KeInitializeApc>(
+                                                         KmHelper::WrapperMmGetSystemRoutine(L"KeInitializeApc"));                          // NOLINT(*)
+    gGlobalData->DynamicExportData.ApiKeInsertQueueApc = static_cast<PFUNC_KeInsertQueueApc>(
+                                                         KmHelper::WrapperMmGetSystemRoutine(L"KeInsertQueueApc"));                         // NOLINT(*)
     //
     // Now the plugin manager.
     //

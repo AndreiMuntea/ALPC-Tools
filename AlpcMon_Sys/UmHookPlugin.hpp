@@ -14,10 +14,16 @@
 #pragma once
 
 #include "precomp.hpp"
+
 #include "PluginManager.hpp"
+#include "ApcQueue.hpp"
 
 namespace SysMon
 {
+/**
+ * @brief   Forward definition. Declared below.
+ */
+class UmHookPlugin;
 
 /**
  * @brief   Describes the injection state for a given process.
@@ -54,6 +60,11 @@ struct UmInjectionDllData
     void*       LoadDllRoutine = nullptr;
 
     /**
+     * @brief   The address where the map section was created.
+     */
+    void*       MapSectionData = nullptr;
+
+    /**
      * @brief   The name of the routine to be searched.
      *          This is what it will be used to load the dll.
      */
@@ -63,6 +74,11 @@ struct UmInjectionDllData
      * @brief   Path of the dll to be injected.
      */
     xpf::StringView<wchar_t>    InjectedDllPath;
+
+    /**
+     * @brief   The instance of the UmHookPlugin
+     */
+    UmHookPlugin* PluginData = nullptr;
 };  // struct UmInjectionMetadata
 
 /**
@@ -143,6 +159,37 @@ class UmHookPlugin final : public IPlugin
         _Inout_ xpf::EventBus* Bus
     ) noexcept(true) override;
 
+    /**
+     * @brief   Getter for the apc queue.
+     *
+     * @return  A reference to the apc queue that can be used to enqueue apcs.
+     */
+    inline KmHelper::ApcQueue& XPF_API
+    ApcQueue(
+        void
+    ) noexcept(true)
+    {
+        return this->m_ApcQueue;
+    }
+
+    /**
+     * @brief       Removes the details about injection for a given PID.
+     *              This routine acquires the process data lock.
+     *
+     * @param[in]   ProcessPid - The id of the process for which the details
+     *                            we want to remove.
+     *
+     * @return      Nothing.
+     */
+    inline void XPF_API
+    RemoveInjectionDataForPidSafe(
+        _In_ uint32_t ProcessPid
+    ) noexcept(true)
+    {
+        xpf::ExclusiveLockGuard guard{ *this->m_ProcessDataLock };
+        this->RemoveInjectionDataForPid(ProcessPid);
+    }
+
  private:
     /**
      * @brief               This method is used to handle a process creation event.
@@ -215,7 +262,7 @@ class UmHookPlugin final : public IPlugin
      /**
       * @brief  Holds the state for all processes.
       */
-     xpf::Vector<SysMon::UmInjectionDllData> m_ProcessData{ SYSMON_PAGED_ALLOCATOR };
+     xpf::Vector<xpf::SharedPointer<SysMon::UmInjectionDllData>> m_ProcessData{ SYSMON_PAGED_ALLOCATOR };
      /**
       * @brief  Guards the process data.
       */
@@ -234,6 +281,12 @@ class UmHookPlugin final : public IPlugin
       * @brief  The full DOS path of the x64 injection dll. 
       */
      xpf::String<wchar_t> m_UmDllX64Path{ SYSMON_PAGED_ALLOCATOR };
+
+     /**
+      * @brief Used to store a list of all scheduled APCs in order
+      *        to prevent the driver unload.
+      */
+     KmHelper::ApcQueue m_ApcQueue;
 
      /**
       * @brief   Default MemoryAllocator is our friend as it requires access to the private

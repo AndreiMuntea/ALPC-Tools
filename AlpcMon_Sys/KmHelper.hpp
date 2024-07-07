@@ -32,7 +32,7 @@ _Ret_maybenull_
 _IRQL_requires_max_(PASSIVE_LEVEL)
 void* XPF_API
 WrapperMmGetSystemRoutine(
-    _In_ _Const_ const xpf::StringView<wchar_t>& SystemRoutineName
+    _In_ _Const_ const wchar_t* SystemRoutineName
 ) noexcept(true);
 
 /**

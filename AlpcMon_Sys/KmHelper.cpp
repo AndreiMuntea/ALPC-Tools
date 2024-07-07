@@ -46,7 +46,7 @@ _IRQL_requires_max_(PASSIVE_LEVEL)
 _Ret_maybenull_
 void* XPF_API
 KmHelper::WrapperMmGetSystemRoutine(
-    _In_ _Const_ const xpf::StringView<wchar_t>& SystemRoutineName
+    _In_ _Const_ const wchar_t* SystemRoutineName
 ) noexcept(true)
 {
     //
@@ -61,8 +61,8 @@ KmHelper::WrapperMmGetSystemRoutine(
     //
     // First we transform the view into UNICODE_STRING format.
     //
-    status = KmHelper::HelperViewToUnicodeString(SystemRoutineName,
-                                                 routineName);
+    status = ::RtlInitUnicodeStringEx(&routineName,
+                                      SystemRoutineName);
     if (!NT_SUCCESS(status))
     {
         return nullptr;

@@ -101,123 +101,6 @@ static constexpr xpf::StringView<wchar_t> gUmDllx64Path     = L"AlpcMon_Dllx64.d
 //
 // -------------------------------------------------------------------------------------------------------------------
 // | ****************************************************************************************************************|
-// |                                       Convenience wrappers over APC api                                         |
-// | ****************************************************************************************************************|
-// -------------------------------------------------------------------------------------------------------------------
-//
-
-static void NTAPI
-WrapperUmHookPluginQueueApcKernelRoutine(
-    _In_ PKAPC Apc,
-    _Inout_ PKNORMAL_ROUTINE* NormalRoutine,
-    _Inout_ PVOID* NormalContext,
-    _Inout_ PVOID* SystemArgument1,
-    _Inout_ PVOID* SystemArgument2
-) noexcept(true)
-{
-    XPF_MAX_APC_LEVEL();
-
-    XPF_UNREFERENCED_PARAMETER(NormalRoutine);
-    XPF_UNREFERENCED_PARAMETER(NormalContext);
-    XPF_UNREFERENCED_PARAMETER(SystemArgument1);
-    XPF_UNREFERENCED_PARAMETER(SystemArgument2);
-
-    SysMonLogTrace("WrapperUmHookPluginQueueApcKernelRoutine called for apc %p",
-                   Apc);
-
-    xpf::CriticalMemoryAllocator::FreeMemory(Apc);
-}
-
-static void NTAPI
-WrapperUmHookPluginQueueApcRundownRoutine(
-    _In_ PKAPC Apc
-) noexcept(true)
-{
-    XPF_MAX_APC_LEVEL();
-
-    SysMonLogTrace("WrapperUmHookPluginQueueApcRundownRoutine called for apc %p",
-                   Apc);
-}
-
-_Must_inspect_result_
-static NTSTATUS NTAPI
-WrapperUmHookPluginQueueApc(
-    _In_opt_ PKNORMAL_ROUTINE NormalRoutine,
-    _In_ KPROCESSOR_MODE Mode,
-    _In_opt_ PVOID NormalContext,
-    _In_opt_ PVOID SystemArgument1,
-    _In_opt_ PVOID SystemArgument2
-) noexcept(true)
-{
-    XPF_MAX_PASSIVE_LEVEL();
-
-    BOOLEAN insertedApc = FALSE;
-    KAPC* kApc = nullptr;
-
-    //
-    // If the thread is terminating, we bail.
-    //
-    if (FALSE != ::PsIsThreadTerminating(::PsGetCurrentThread()))
-    {
-        return STATUS_TOO_LATE;
-    }
-
-    //
-    // On x64, we need to encode the routine when injecting in wow processes.
-    //
-    if constexpr (SysMon::CurrentOsArchitecture() == SysMon::OsArchitecture::amd64)
-    {
-        if (Mode == UserMode && KmHelper::WrapperIsWow64Process(PsGetCurrentProcess()))
-        {
-            NTSTATUS status = ::PsWrapApcWow64Thread(&NormalContext,
-                                                     reinterpret_cast<PVOID*>(&NormalRoutine));
-            if (!NT_SUCCESS(status))
-            {
-                return status;
-            }
-        }
-    }
-
-    //
-    // First allocate an APC object.
-    //
-    kApc = static_cast<KAPC*>(xpf::CriticalMemoryAllocator::AllocateMemory(sizeof(KAPC)));
-    if (nullptr == kApc)
-    {
-        return STATUS_INSUFFICIENT_RESOURCES;
-    }
-    xpf::ApiZeroMemory(kApc, sizeof(KAPC));
-
-    //
-    // Now properly initialize it.
-    //
-    ::KeInitializeApc(kApc,
-                      ::PsGetCurrentThread(),
-                      KAPC_ENVIRONMENT::OriginalApcEnvironment,
-                      WrapperUmHookPluginQueueApcKernelRoutine,
-                      WrapperUmHookPluginQueueApcRundownRoutine,
-                      NormalRoutine,
-                      Mode,
-                      NormalContext);
-    //
-    // Insert it.
-    //
-    insertedApc = ::KeInsertQueueApc(kApc,
-                                     SystemArgument1,
-                                     SystemArgument2,
-                                     IO_NO_INCREMENT);
-    if (!insertedApc)
-    {
-        xpf::CriticalMemoryAllocator::FreeMemory(&kApc);
-        return STATUS_INVALID_STATE_TRANSITION;
-    }
-    return STATUS_SUCCESS;
-}
-
-
-//
-// -------------------------------------------------------------------------------------------------------------------
-// | ****************************************************************************************************************|
 // |                                       Convenience helpers for injection                                         |
 // | ****************************************************************************************************************|
 // -------------------------------------------------------------------------------------------------------------------
@@ -236,7 +119,7 @@ WrapperUmHookPluginQueueApc(
 _Must_inspect_result_
 static NTSTATUS NTAPI
 HelperUmHookPluginMapSectionAndInject(
-    _In_ _Const_ const SysMon::UmInjectionDllData& InjectionData
+    _Inout_ SysMon::UmInjectionDllData& InjectionData
 ) noexcept(true)
 {
     XPF_MAX_PASSIVE_LEVEL();
@@ -316,6 +199,7 @@ HelperUmHookPluginMapSectionAndInject(
         baseAddress = NULL;
         goto CleanUp;
     }
+    InjectionData.MapSectionData = baseAddress;
 
     //
     // Copy the path.
@@ -344,9 +228,6 @@ HelperUmHookPluginMapSectionAndInject(
     }
 
     //
-    // And schedule the APC. On x64 wow scenario we need to encode the parameters.
-    // PsWrapApcWow64Thread will change to wow64.dll!Wow64ApcRoutine
-    //
     // HMODULE LoadLibraryExW(
     //   [in] LPCWSTR lpLibFileName,
     //   [in, opt] HANDLE  hFile,
@@ -366,14 +247,15 @@ HelperUmHookPluginMapSectionAndInject(
         goto CleanUp;
     }
 
-    status = WrapperUmHookPluginQueueApc(apcRoutine,
-                                         UserMode,
-                                         apcContext,
-                                         NULL,
-                                         0);
+    status = InjectionData.PluginData->ApcQueue().ScheduleApc(UserMode,
+                                                              apcRoutine,
+                                                              NULL,
+                                                              apcContext,
+                                                              NULL,
+                                                              0);
     if (!NT_SUCCESS(status))
     {
-        SysMonLogError("WrapperUmHookPluginQueueApc failed with status = %!STATUS!",
+        SysMonLogError("ScheduleApc failed with status = %!STATUS!",
                        status);
         goto CleanUp;
     }
@@ -394,6 +276,7 @@ CleanUp:
         XPF_DEATH_ON_FAILURE(NT_SUCCESS(unmapStatus));
 
         baseAddress = NULL;
+        InjectionData.MapSectionData = NULL;
     }
     if (NULL != sectionHandle)
     {
@@ -438,16 +321,52 @@ HelperUmHookPluginMapSectionApc(
 
     SysMonLogInfo("Finished executing map section apc for process %d",
                   data->ProcessId);
-    //
-    // Free resources.
-    //
-    xpf::MemoryAllocator::Destruct(data);
-    xpf::CriticalMemoryAllocator::FreeMemory(data);
+}
+
+static void NTAPI
+HelperUmHookPluginUnMapSectionApc(
+  _In_ PVOID NormalContext,
+  _In_ PVOID SystemArgument1,
+  _In_ PVOID SystemArgument2
+)
+{
+    XPF_MAX_PASSIVE_LEVEL();
+
+    NTSTATUS status = STATUS_UNSUCCESSFUL;
+    SysMon::UmInjectionDllData* data = nullptr;
+
+    XPF_UNREFERENCED_PARAMETER(SystemArgument1);
+    XPF_UNREFERENCED_PARAMETER(SystemArgument2);
+    XPF_DEATH_ON_FAILURE(nullptr != NormalContext);
+
+    data = static_cast<SysMon::UmInjectionDllData*>(NormalContext);
+
+    void* mapSectionData = data->MapSectionData;
+    data->MapSectionData = nullptr;
+
+    SysMonLogInfo("Cleaning up - unmap section (%p) APC for process with pid %d.",
+                  mapSectionData,
+                  data->ProcessId);
+
+    /* First remove the data. */
+    data->PluginData->RemoveInjectionDataForPidSafe(data->ProcessId);
+    data = nullptr;
+
+    if (mapSectionData != nullptr)
+    {
+        status = ::ZwUnmapViewOfSection(ZwCurrentProcess(),
+                                        mapSectionData);
+        if (!NT_SUCCESS(status))
+        {
+            SysMonLogError("ZwUnmapViewOfSection failed with status = %!STATUS!",
+                           status);
+        }
+    }
 }
 
 static void NTAPI
 HelperUmHookPluginInject(
-    _In_ _Const_ const SysMon::UmInjectionDllData& InjectionData
+    _Inout_ SysMon::UmInjectionDllData& InjectionData
 ) noexcept(true)
 {
     //
@@ -458,7 +377,6 @@ HelperUmHookPluginInject(
     XPF_MAX_PASSIVE_LEVEL();
 
     NTSTATUS status = STATUS_UNSUCCESSFUL;
-    SysMon::UmInjectionDllData* copy = nullptr;
 
     SysMonLogInfo("Enqueing map section APC in process %d...",
                    InjectionData.ProcessId);
@@ -477,43 +395,70 @@ HelperUmHookPluginInject(
     }
 
     //
-    // We need a clone here so we don't force the UM plugin to keep a reference.
+    // Now queue an APC.
     //
-    copy = static_cast<SysMon::UmInjectionDllData*>(
-           xpf::CriticalMemoryAllocator::AllocateMemory(sizeof(SysMon::UmInjectionDllData)));
-    if (nullptr == copy)
+    status = InjectionData.PluginData->ApcQueue().ScheduleApc(KernelMode,
+                                                              HelperUmHookPluginMapSectionApc,
+                                                              NULL,
+                                                              xpf::AddressOf(InjectionData),
+                                                              NULL,
+                                                              NULL);
+    if (!NT_SUCCESS(status))
     {
-        SysMonLogError("Could not clone UmInjectionDllData");
-        return;
+        SysMonLogError("ScheduleApc failed with status = %!STATUS!",
+                       status);
     }
-    xpf::MemoryAllocator::Construct(copy);
+    else
+    {
+        SysMonLogInfo("Successfully enqueued map section APC in process %d...",
+                      InjectionData.ProcessId);
+    }
+}
+
+
+static void NTAPI
+HelperUmHookPluginCleanupInject(
+    _Inout_ SysMon::UmInjectionDllData& InjectionData
+) noexcept(true)
+{
+    //
+    // As we are on the load image flow, we can't do a ZwUnmapSection.
+    // So we instead will deffer the work here.
+    //
+
+    XPF_MAX_PASSIVE_LEVEL();
+
+    NTSTATUS status = STATUS_UNSUCCESSFUL;
+
+    SysMonLogInfo("Enqueing unmap section APC in process %d...",
+                   InjectionData.ProcessId);
 
     //
-    // Fill the fields.
+    // Sanity check that we are in the good context.
     //
-    copy->ProcessId = InjectionData.ProcessId;
-    copy->RequiredDlls = InjectionData.RequiredDlls;
-    copy->LoadedDlls = InjectionData.LoadedDlls;
-    copy->MatchingDll = InjectionData.MatchingDll;
-    copy->LoadDllRoutine = InjectionData.LoadDllRoutine;
-    copy->LoadDllRoutineName = InjectionData.LoadDllRoutineName;
-    copy->InjectedDllPath = InjectionData.InjectedDllPath;
+    if (::PsGetCurrentProcessId() != ULongToHandle(InjectionData.ProcessId))
+    {
+        XPF_ASSERT(FALSE);
+
+        SysMonLogError("Can not enqueue an APC from a different process. Expepcted %d. Actual %d",
+                       InjectionData.ProcessId,
+                       HandleToUlong(::PsGetCurrentProcessId()));
+        return;
+    }
 
     //
     // Now queue an APC.
     //
-    status = WrapperUmHookPluginQueueApc(HelperUmHookPluginMapSectionApc,
-                                         KernelMode,
-                                         copy,
-                                         NULL,
-                                         NULL);
+    status = InjectionData.PluginData->ApcQueue().ScheduleApc(KernelMode,
+                                                              HelperUmHookPluginUnMapSectionApc,
+                                                              NULL,
+                                                              xpf::AddressOf(InjectionData),
+                                                              NULL,
+                                                              NULL);
     if (!NT_SUCCESS(status))
     {
-        SysMonLogError("WrapperUmHookPluginQueueApc failed with status = %!STATUS!",
+        SysMonLogError("ScheduleApc failed with status = %!STATUS!",
                        status);
-
-        xpf::MemoryAllocator::Destruct(copy);
-        xpf::CriticalMemoryAllocator::FreeMemory(copy);
     }
     else
     {
@@ -743,10 +688,19 @@ SysMon::UmHookPlugin::OnProcessCreateEvent(
     //
     // Intialize the structure which describes the required metadata.
     //
-    SysMon::UmInjectionDllData dllData;
+    xpf::SharedPointer<SysMon::UmInjectionDllData> dllDataPtr{ this->m_ProcessData.GetAllocator() };
+    dllDataPtr = xpf::MakeSharedWithAllocator<SysMon::UmInjectionDllData>(this->m_ProcessData.GetAllocator());
+    if (dllDataPtr.IsEmpty())
+    {
+        SysMonLogError("Could not allocate resources for um injection data!");
+        return;
+    }
+
+    SysMon::UmInjectionDllData& dllData = (*dllDataPtr);
 
     dllData.ProcessId = eventInstanceRef.ProcessPid();
     dllData.LoadedDlls = 0;
+    dllData.PluginData = this;
 
     //
     // ntdll is always required. By default we wait for native dll to load.
@@ -819,7 +773,7 @@ SysMon::UmHookPlugin::OnProcessCreateEvent(
     this->RemoveInjectionDataForPid(eventInstanceRef.ProcessPid());
 
     /* Not much we can do if this fails. Simply skip process. */
-    status = this->m_ProcessData.Emplace(xpf::Move(dllData));
+    status = this->m_ProcessData.Emplace(dllDataPtr);
     if (!NT_SUCCESS(status))
     {
         SysMonLogError("Failed to insert injection data for pid %d. Required DLLs %d. status = %!STATUS!",
@@ -899,13 +853,11 @@ SysMon::UmHookPlugin::OnImageLoadEvent(
     SysMon::UmInjectionDllData* injectionData = this->FindInjectionDataForPid(eventInstanceRef.ProcessPid());
     if (nullptr != injectionData)
     {
-        if (injectionData->LoadedDlls == injectionData->RequiredDlls)
+        if (eventInstanceRef.ImagePath().View().Substring(gUmDllWin32Path, false, nullptr) ||
+            eventInstanceRef.ImagePath().View().Substring(gUmDllx64Path,   false, nullptr))
         {
-            /* We have all required dlls - enqueue an apc to do injection. */
-            HelperUmHookPluginInject(*injectionData);
-
-            /* No point in keeping this data. */
-            this->RemoveInjectionDataForPid(injectionData->ProcessId);
+            /* No point in keeping this data after we get our dll. */
+            HelperUmHookPluginCleanupInject(*injectionData);
         }
         else
         {
@@ -919,10 +871,6 @@ SysMon::UmHookPlugin::OnImageLoadEvent(
                     break;
                 }
             }
-
-            /* Mark the dll as loaded - do not attempt injection here, wait next dll as we need to wait for relocs .*/
-            /* We do this as we use LoadLibraryExW which may be forwarded to kernelbase dll. */
-            /* The next loaded dll will be kernelbase so it will be safe to perform injection then. */
             injectionData->LoadedDlls |= systemDllFlag;
 
             /* If this dll is the one we need to find the routine, we lookup here. */
@@ -932,6 +880,14 @@ SysMon::UmHookPlugin::OnImageLoadEvent(
                                                                            eventInstanceRef.ImageSize(),
                                                                            true,
                                                                            injectionData->LoadDllRoutineName.Buffer());
+            }
+            /* Inject data. Reset loaded and required dlls to prevent 2x inject apcs. */
+            if (injectionData->LoadedDlls == injectionData->RequiredDlls)
+            {
+                injectionData->LoadedDlls = 0;
+                injectionData->RequiredDlls = xpf::NumericLimits<uint32_t>::MaxValue();
+
+                HelperUmHookPluginInject(*injectionData);
             }
         }
     }
@@ -960,7 +916,7 @@ SysMon::UmHookPlugin::RemoveInjectionDataForPid(
 
     while (i < this->m_ProcessData.Size())
     {
-        if (this->m_ProcessData[i].ProcessId == ProcessPid)
+        if (this->m_ProcessData[i].Get()->ProcessId == ProcessPid)
         {
             NTSTATUS status = this->m_ProcessData.Erase(i);
             XPF_DEATH_ON_FAILURE(NT_SUCCESS(status));
@@ -989,9 +945,9 @@ SysMon::UmHookPlugin::FindInjectionDataForPid(
 
     for (size_t i = 0; i < this->m_ProcessData.Size(); ++i)
     {
-        if (this->m_ProcessData[i].ProcessId == ProcessPid)
+        if (this->m_ProcessData[i].Get()->ProcessId == ProcessPid)
         {
-            return xpf::AddressOf(this->m_ProcessData[i]);
+            return this->m_ProcessData[i].Get();
         }
     }
     return nullptr;

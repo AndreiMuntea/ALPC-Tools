@@ -188,6 +188,45 @@ typedef BOOLEAN(NTAPI* PFUNC_PsIsProtectedProcessLight)(_In_ PEPROCESS Process);
 //
 typedef PVOID(NTAPI* PFUNC_PsGetProcessWow64Process)(_In_ PEPROCESS Process);
 
+
+//
+// -------------------------------------------------------------------------------------------------------------------
+// | ****************************************************************************************************************|
+// |                         KeRemoveQueueApc                                                                        |
+// | ****************************************************************************************************************|
+// -------------------------------------------------------------------------------------------------------------------
+//
+typedef BOOLEAN(NTAPI* PFUNC_KeRemoveQueueApc)(_Inout_ PRKAPC Apc);
+
+
+//
+// -------------------------------------------------------------------------------------------------------------------
+// | ****************************************************************************************************************|
+// |                         KeInitializeApc                                                                         |
+// | ****************************************************************************************************************|
+// -------------------------------------------------------------------------------------------------------------------
+//
+typedef VOID(NTAPI* PFUNC_KeInitializeApc)(_Out_ PRKAPC Apc,
+                                           _In_ PRKTHREAD Thread,
+                                           _In_ KAPC_ENVIRONMENT Environment,
+                                           _In_ PKKERNEL_ROUTINE KernelRoutine,
+                                           _In_opt_ PKRUNDOWN_ROUTINE RundownRoutine,
+                                           _In_opt_ PKNORMAL_ROUTINE NormalRoutine,
+                                           _In_ KPROCESSOR_MODE Mode,
+                                           _In_opt_ PVOID NormalContext);
+
+//
+// -------------------------------------------------------------------------------------------------------------------
+// | ****************************************************************************************************************|
+// |                         KeInsertQueueApc                                                                        |
+// | ****************************************************************************************************************|
+// -------------------------------------------------------------------------------------------------------------------
+//
+typedef BOOLEAN(NTAPI* PFUNC_KeInsertQueueApc)(_Inout_ PRKAPC Apc,
+                                               _In_opt_ PVOID SystemArgument1,
+                                               _In_opt_ PVOID SystemArgument2,
+                                               _In_ KPRIORITY Increment);
+
 //
 // -------------------------------------------------------------------------------------------------------------------
 // | ****************************************************************************************************************|
@@ -202,6 +241,9 @@ typedef struct _SYSMON_GLOBAL_DYNAMIC_EXPORT_DATA
     PFUNC_PsIsProtectedProcess          ApiPsIsProtectedProcess;
     PFUNC_PsIsProtectedProcessLight     ApiPsIsProtectedProcessLight;
     PFUNC_PsGetProcessWow64Process      ApiPsGetProcessWow64Process;
+    PFUNC_KeRemoveQueueApc              ApiKeRemoveQueueApc;
+    PFUNC_KeInitializeApc               ApiKeInitializeApc;
+    PFUNC_KeInsertQueueApc              ApiKeInsertQueueApc;
 } SYSMON_GLOBAL_DYNAMIC_EXPORT_DATA;
 
 XPF_EXTERN_C_END();
