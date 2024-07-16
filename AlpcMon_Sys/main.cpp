@@ -192,7 +192,7 @@ DriverEntry(
     //
     // We want our driver to be unloadable. So we have to set an unload routine.
     //
-    DriverObject->DriverUnload = DriverUnload;
+    DriverObject->DriverUnload = (PDRIVER_UNLOAD)DriverUnload;
 
     //
     // Prepare the cpp support.
