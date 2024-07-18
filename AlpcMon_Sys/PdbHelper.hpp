@@ -15,6 +15,7 @@
 #pragma once
 
 #include "precomp.hpp"
+#include "FileObject.hpp"
 
 namespace PdbHelper
 {
@@ -24,18 +25,18 @@ namespace PdbHelper
  *              An HTTP request to http://msdl.microsoft.com/download/symbols is performed
  *              to retrieve the required .pdb file.
  *
- * @param[in]   FileHandle       - The handle to the opened module.
- * @param[in]   PdbDirectoryPath - The directory where to save the pdb on disk.
- *                                 This must exist.
- * @param[out]  Symbols          - Extracted symbols from the .pdb files.
+ * @param[in,out]   File             - The opened module file.
+ * @param[in]       PdbDirectoryPath - The directory where to save the pdb on disk.
+ *                                     This must exist.
+ * @param[out]      Symbols          - Extracted symbols from the .pdb files.
  *
- * @return      A proper NTSTATUS error code.
+ * @return          A proper NTSTATUS error code.
  */
 _Must_inspect_result_
 _IRQL_requires_max_(PASSIVE_LEVEL)
 NTSTATUS XPF_API
 ExtractPdbSymbolInformation(
-    _In_ HANDLE FileHandle,
+    _Inout_ SysMon::File::FileObject& File,
     _In_ _Const_ const xpf::StringView<wchar_t>& PdbDirectoryPath,
     _Out_ xpf::Vector<xpf::pdb::SymbolInformation>* Symbols
 ) noexcept(true);

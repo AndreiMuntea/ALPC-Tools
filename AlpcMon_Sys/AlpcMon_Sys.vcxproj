@@ -379,6 +379,7 @@
     <ClCompile Include="RpcEngine.cpp" />
     <ClCompile Include="ThreadFilter.cpp" />
     <ClCompile Include="UmHookPlugin.cpp" />
+    <ClCompile Include="FileObject.cpp" />
     <ClCompile Include="WorkQueue.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -395,6 +396,7 @@
     <ClInclude Include="HashUtils.hpp" />
     <ClInclude Include="ImageFilter.hpp" />
     <ClInclude Include="KmHelper.hpp" />
+    <ClInclude Include="FileObject.hpp" />
     <ClInclude Include="ModuleCollector.hpp" />
     <ClInclude Include="PdbHelper.hpp" />
     <ClInclude Include="PluginManager.hpp" />

@@ -353,142 +353,322 @@ ProcessFilterGetProcessImageName(
 }
 
 /**
- * @brief   This routine is used to gather information about the already running processes.
- *          We will block the creation of new ones until this is finished.
- *          This must be called after registering the notification.
+ * @brief       Given an opend process object, it retrieves the peb.
+ *
+ * @param[in]   ProcessHandle   - handle to the opened process.
+ * @param[in]   RetrieveWoWPeb  - true if wow64 peb is requested, false if the native peb is.
+ * @param[out]  Peb             - A user mode address for the peb.
+ *
+ * @return      A proper NTSTATUS error code.
  */
-static void XPF_API
-ProcessFilterGatherPreexistingProcesses(
-    void
+static NTSTATUS XPF_API
+ProcessFilterQueryPeb(
+    _In_ HANDLE ProcessHandle,
+    _In_ bool RetrieveWoWPeb,
+    _Out_ PVOID* Peb
 ) noexcept(true)
 {
-    /* The routine can be called only at max PASSIVE_LEVEL. */
     XPF_MAX_PASSIVE_LEVEL();
 
     NTSTATUS status = STATUS_UNSUCCESSFUL;
-    xpf::Buffer processBuffer{ SYSMON_PAGED_ALLOCATOR };
-    XPF_SYSTEM_PROCESS_INFORMATION* processInformation = nullptr;
+    PVOID peb = nullptr;
 
-    /* We may need to do this in a loop as we don't know how much memory to preallocate. */
-    for (size_t i = 1; i <= 100; ++i)
+    ULONG retLength = 0;
+    ULONG infoClassLength = 0;
+
+    /* Preinit output. */
+    *Peb = nullptr;
+
+    if (RetrieveWoWPeb)
     {
-        status = processBuffer.Resize(i * PAGE_SIZE);
+        ULONG_PTR peb32 = 0;
+
+        infoClassLength = sizeof(peb32);
+        status = ::ZwQueryInformationProcess(ProcessHandle,
+                                             PROCESSINFOCLASS::ProcessWow64Information,
+                                             &peb32,
+                                             infoClassLength,
+                                             &retLength);
+        peb = reinterpret_cast<void*>(peb32);
+    }
+    else
+    {
+        PROCESS_BASIC_INFORMATION pbi = { 0 };
+
+        infoClassLength = sizeof(pbi);
+        status = ::ZwQueryInformationProcess(ProcessHandle,
+                                             PROCESSINFOCLASS::ProcessBasicInformation,
+                                             &pbi,
+                                             infoClassLength,
+                                             &retLength);
+        peb = pbi.PebBaseAddress;
+    }
+
+    /* Failed to ZwQuery. */
+    if (!NT_SUCCESS(status))
+    {
+        return status;
+    }
+
+    /* Returned information is insufficient. We can't rely on results. */
+    if (retLength != infoClassLength)
+    {
+        return STATUS_INFO_LENGTH_MISMATCH;
+    }
+
+    /* Could not find the peb. */
+    if (nullptr == peb)
+    {
+        return STATUS_NOT_FOUND;
+    }
+
+    /* All good. Send back the peb. */
+    *Peb = peb;
+
+    return STATUS_SUCCESS;
+}
+
+/**
+ * @brief       Given an opend process object, it walks the modules list as they are in peb.
+ *
+ * @param[in]   ProcessPid      - The pid of the process
+ * @param[in]   Process         - The opened eprocess
+ * @param[in]   ProcessHandle   - handle to the opened eprocess
+ * @param[in]   IsWowPeb        - true if wow64 peb is provided, false if the native peb is.
+ * @param[in]   Peb             - A user mode address where we can find the peb.
+ *
+ * @return      A proper NTSTATUS error code.
+ */
+static NTSTATUS XPF_API
+ProcessFilterGatherModulesForPeb(
+    _In_ uint32_t ProcessPid,
+    _In_ PEPROCESS Process,
+    _In_ HANDLE ProcessHandle,
+    _In_ bool IsWowPeb,
+    _In_ PVOID Peb
+) noexcept(true)
+{
+    /* Must be called only at passive. */
+    XPF_MAX_PASSIVE_LEVEL();
+
+    KAPC_STATE apcState = { 0 };
+    NTSTATUS status = STATUS_UNSUCCESSFUL;
+    xpf::Buffer buffer{ SYSMON_PAGED_ALLOCATOR };
+
+    PVOID pebLdrData = nullptr;
+    PVOID inLoadOrderModuleList = nullptr;
+
+    /* Attach the thread to the process. We need to read its memory. */
+    ::KeEnterCriticalRegion();
+    ::KeStackAttachProcess(Process, &apcState);
+
+    /* Store a large enough buffer in which we'll read data. */
+    status = buffer.Resize(PAGE_SIZE);
+    if (!NT_SUCCESS(status))
+    {
+        goto CleanUp;
+    }
+
+    /* Now read the PEB to get to the ldr data. */
+    static_assert(sizeof(XPF_PEB_NATIVE) < PAGE_SIZE, "Buffer has only 1 page preallocated !");
+    static_assert(sizeof(XPF_PEB32)      < PAGE_SIZE, "Buffer has only 1 page preallocated !");
+
+    status = KmHelper::HelperSafeWriteBuffer(buffer.GetBuffer(),
+                                             Peb,
+                                             IsWowPeb ? sizeof(XPF_PEB32)
+                                                      : sizeof(XPF_PEB_NATIVE));
+    if (!NT_SUCCESS(status))
+    {
+        goto CleanUp;
+    }
+    pebLdrData = (IsWowPeb) ? ULongToPtr(static_cast<XPF_PEB32*>(buffer.GetBuffer())->Ldr)
+                            : static_cast<XPF_PEB_NATIVE*>(buffer.GetBuffer())->Ldr;
+
+    /* Now read the ldr data */
+    static_assert(sizeof(XPF_PEB_LDR_DATA_NATIVE) < PAGE_SIZE, "Buffer has only 1 page preallocated !");
+    static_assert(sizeof(XPF_PEB_LDR_DATA32)      < PAGE_SIZE, "Buffer has only 1 page preallocated !");
+
+    status = KmHelper::HelperSafeWriteBuffer(buffer.GetBuffer(),
+                                             pebLdrData,
+                                             IsWowPeb ? sizeof(XPF_PEB_LDR_DATA32)
+                                                      : sizeof(XPF_PEB_LDR_DATA_NATIVE));
+    if (!NT_SUCCESS(status))
+    {
+        goto CleanUp;
+    }
+    inLoadOrderModuleList = (IsWowPeb)
+                            ? ULongToPtr(static_cast<XPF_PEB_LDR_DATA32*>(buffer.GetBuffer())->InLoadOrderModuleList.Flink)
+                            : static_cast<XPF_PEB_LDR_DATA_NATIVE*>(buffer.GetBuffer())->InLoadOrderModuleList.Flink;
+
+    /* Loop through modules. */
+    while (true)
+    {
+        /* Get the data table entry. */
+        PVOID dllImageBase = nullptr;
+        ULONG dllImageSize = 0;
+
+        SIZE_T imagePathLength = 0;
+        xpf::StringView<wchar_t> imagePath;
+
+        static_assert(sizeof(XPF_LDR_DATA_TABLE_ENTRY_NATIVE) < PAGE_SIZE, "Buffer has only 1 page preallocated !");
+        static_assert(sizeof(XPF_LDR_DATA_TABLE_ENTRY32)      < PAGE_SIZE, "Buffer has only 1 page preallocated !");
+
+        status = KmHelper::HelperSafeWriteBuffer(buffer.GetBuffer(),
+                                                 inLoadOrderModuleList,
+                                                 IsWowPeb ? sizeof(XPF_LDR_DATA_TABLE_ENTRY32)
+                                                          : sizeof(XPF_LDR_DATA_TABLE_ENTRY_NATIVE));
         if (!NT_SUCCESS(status))
+        {
+            goto CleanUp;
+        }
+
+        /* Grab image details depending on peb type. */
+        if (IsWowPeb)
+        {
+            const XPF_LDR_DATA_TABLE_ENTRY32* entry = static_cast<const XPF_LDR_DATA_TABLE_ENTRY32*>(
+                                                      buffer.GetBuffer());
+            dllImageBase = ULongToPtr(entry->DllBase);
+            dllImageSize = entry->SizeOfImage;
+            inLoadOrderModuleList = ULongToPtr(entry->InLoadOrderLinks.Flink);
+        }
+        else
+        {
+            const XPF_LDR_DATA_TABLE_ENTRY_NATIVE* entry = static_cast<const XPF_LDR_DATA_TABLE_ENTRY_NATIVE*>(
+                                                           buffer.GetBuffer());
+            dllImageBase = entry->DllBase;
+            dllImageSize = entry->SizeOfImage;
+            inLoadOrderModuleList = entry->InLoadOrderLinks.Flink;
+        }
+
+        /* If the image base is null, it's our clue to stop. */
+        if (nullptr == dllImageBase)
+        {
+            break;
+        }
+
+        /* Read the image path properly. */
+        status = ::ZwQueryVirtualMemory(ProcessHandle,
+                                        dllImageBase,
+                                        static_cast<MEMORY_INFORMATION_CLASS>(0x2),  // MemoryMappedFilenameInformation
+                                        buffer.GetBuffer(),
+                                        buffer.GetSize(),
+                                        &imagePathLength);
+        if (!NT_SUCCESS(status))
+        {
+            goto CleanUp;
+        }
+        if (imagePathLength < sizeof(UNICODE_STRING))
+        {
+            status = STATUS_INFO_LENGTH_MISMATCH;
+            goto CleanUp;
+        }
+        status = KmHelper::HelperUnicodeStringToView(*static_cast<const UNICODE_STRING*>(buffer.GetBuffer()),
+                                                     imagePath);
+        if (!NT_SUCCESS(status))
+        {
+            goto CleanUp;
+        }
+
+        /* Log for tracing. */
+        SysMonLogTrace("Found already loaded module %S at 0x%p in process %d",
+                       imagePath.Buffer(),
+                       dllImageBase,
+                       ProcessPid);
+
+        /* Signal the loaded module details. */
+        ProcessCollectorHandleLoadModule(ProcessPid,
+                                         imagePath,
+                                         dllImageBase,
+                                         dllImageSize);
+    }
+
+    /* If we are here, it's all good. */
+    status = STATUS_SUCCESS;
+
+CleanUp:
+    /* Detach from the process. */
+    ::KeUnstackDetachProcess(&apcState);
+    ::KeLeaveCriticalRegion();
+
+    return status;
+}
+
+/**
+ * @brief       Gathers the loaded modules of a process.
+ *              For now we are iterating the PEB to find the already loaded modules.
+ *              Notifications must be blocked until this is running. Must be ensured by the caller.
+ */
+static void XPF_API
+ProcessFilterGatherModulesForProcess(
+    _In_ uint32_t ProcessPid,
+    _In_ PEPROCESS ProcessObject,
+    _In_ HANDLE ProcessHandle
+) noexcept(true)
+{
+    /* Must be called only at passive. */
+    XPF_MAX_PASSIVE_LEVEL();
+
+    NTSTATUS status = STATUS_UNSUCCESSFUL;
+    PVOID peb = nullptr;
+
+    /* First we walk the native peb. This is done for wow64 processes as well. */
+    status = ProcessFilterQueryPeb(ProcessHandle,
+                                   false,
+                                   &peb);
+
+    /* If ntquery failed, we try an undocumented fallback API first, this will use eprocess. */
+    /* if this will return NULL, it means the process is a system process and it does not have a PEB. */
+    if (!NT_SUCCESS(status))
+    {
+        peb = ::PsGetProcessPeb(ProcessObject);
+        if (NULL == peb)
         {
             return;
         }
-
-        ULONG informationLength = 0;
-        status = ::ZwQuerySystemInformation(XPF_SYSTEM_INFORMATION_CLASS::XpfSystemProcessInformation,
-                                            processBuffer.GetBuffer(),
-                                            static_cast<ULONG>(processBuffer.GetSize()),
-                                            &informationLength);
-        if (NT_SUCCESS(status))
-        {
-            /* Snapshotted the processes. */
-            break;
-        }
+        status = STATUS_SUCCESS;
     }
 
-    /* Could not snapshot the processes. */
+    status = ProcessFilterGatherModulesForPeb(ProcessPid,
+                                              ProcessObject,
+                                              ProcessHandle,
+                                              false,
+                                              peb);
     if (!NT_SUCCESS(status))
     {
+        SysMonLogWarning("Could not retrieve native modules for process with pid %d, status = %!STATUS!",
+                         ProcessPid,
+                         status);
         return;
     }
 
-    /* Success */
-    processInformation = static_cast<XPF_SYSTEM_PROCESS_INFORMATION*>(processBuffer.GetBuffer());
-
-
-    /* Walk all processes and best effort cache them. */
-    while(processInformation != nullptr)
+    /* Then if the process is wow64, we also walk the wow64 peb. */
+    if (KmHelper::WrapperIsWow64Process(ProcessObject))
     {
-        xpf::String<wchar_t> processPath{ SYSMON_PAGED_ALLOCATOR };
-        PEPROCESS processObject = nullptr;
-        HANDLE processHandle = nullptr;
-
-        /* We're entering a new process loop. */
-        status = STATUS_SUCCESS;
-
-        /* If the process is the idle process we handle it separately. */
-        /* This process can't be opened like a normal process. */
-        if (processInformation->UniqueProcessId == 0)
-        {
-            ProcessCollectorHandleCreateProcess(HandleToULong(processInformation->UniqueProcessId),
-                                                L"idle");
-            goto ContinueLoop;
-        }
-
-        /* Find the associated eprocess. */
-        status = ::PsLookupProcessByProcessId(processInformation->UniqueProcessId,
-                                              &processObject);
+        status = ProcessFilterQueryPeb(ProcessHandle,
+                                       true,
+                                       &peb);
         if (!NT_SUCCESS(status))
         {
-            goto ContinueLoop;
-        }
-
-        /* Grab a handle to the eprocess. */
-        status = ::ObOpenObjectByPointer(processObject,
-                                         OBJ_KERNEL_HANDLE,
-                                         NULL,
-                                         PROCESS_ALL_ACCESS,
-                                         *PsProcessType,
-                                         KernelMode,
-                                         &processHandle);
-        if (!NT_SUCCESS(status))
-        {
-            goto ContinueLoop;
-        }
-
-        /* Grab the image path. */
-        status = ProcessFilterGetProcessImagePath(processHandle,
-                                                  &processPath);
-        if (NT_SUCCESS(status))
-        {
-            /* If the path is empty, we'll only grab the name - can happen for registry or other system processes. */
-            if (processPath.IsEmpty())
-            {
-                status = ProcessFilterGetProcessImageName(processObject,
-                                                          &processPath);
-            }
-        }
-        if (!NT_SUCCESS(status))
-        {
-            goto ContinueLoop;
-        }
-
-        /* Add it to collector. */
-        ProcessCollectorHandleCreateProcess(HandleToULong(processInformation->UniqueProcessId),
-                                            processPath.View());
-
-    ContinueLoop:
-        if (processHandle != nullptr)
-        {
-            NTSTATUS closeStatus = ::ObCloseHandle(processHandle,
-                                                   KernelMode);
-            processHandle = nullptr;
-            XPF_DEATH_ON_FAILURE(NT_SUCCESS(closeStatus));
-        }
-        if (processObject != nullptr)
-        {
-            ::ObDereferenceObjectDeferDelete(processObject);
-            processObject = nullptr;
-        }
-
-        if (!NT_SUCCESS(status))
-        {
-            SysMonLogWarning("Failed to gather information about the process with pid %d (%wZ) %!STATUS!",
-                             HandleToULong(processInformation->UniqueProcessId),
-                             &processInformation->ImageName,
+            SysMonLogWarning("Could not retrieve wow peb for process with pid %d, status = %!STATUS!",
+                             ProcessPid,
                              status);
+            return;
         }
-
-        void* next = (processInformation->NextEntryOffset != 0) ? xpf::AlgoAddToPointer(processInformation,
-                                                                                        processInformation->NextEntryOffset)
-                                                                : nullptr;
-        processInformation = static_cast<XPF_SYSTEM_PROCESS_INFORMATION*>(next);
+        status = ProcessFilterGatherModulesForPeb(ProcessPid,
+                                                  ProcessObject,
+                                                  ProcessHandle,
+                                                  true,
+                                                  peb);
+        if (!NT_SUCCESS(status))
+        {
+            SysMonLogWarning("Could not retrieve wow modules for process with pid %d, status = %!STATUS!",
+                             ProcessPid,
+                             status);
+            return;
+        }
     }
 }
+
 
 //
 // -------------------------------------------------------------------------------------------------------------------
@@ -546,12 +726,6 @@ ProcessFilterStart(
                        status);
         return status;
     }
-
-    //
-    // Now gather information about the preexisting processes.
-    // We do it inline with the registration, to prevent new notifications from happening.
-    //
-    ProcessFilterGatherPreexistingProcesses();
 
     //
     // All good.
@@ -618,4 +792,153 @@ ProcessFilterStop(
     // All good.
     //
     SysMonLogInfo("Successfully unregistered process notification routine!");
+}
+
+//
+// -------------------------------------------------------------------------------------------------------------------
+// | ****************************************************************************************************************|
+// |                                       ProcessFilterGatherPreexistingProcesses                                   |
+// | ****************************************************************************************************************|
+// -------------------------------------------------------------------------------------------------------------------
+//
+
+_Use_decl_annotations_
+void XPF_API
+ProcessFilterGatherPreexistingProcesses(
+    void
+) noexcept(true)
+{
+    /* The routine can be called only at max PASSIVE_LEVEL. */
+    XPF_MAX_PASSIVE_LEVEL();
+
+    NTSTATUS status = STATUS_UNSUCCESSFUL;
+    xpf::Buffer processBuffer{ SYSMON_PAGED_ALLOCATOR };
+    XPF_SYSTEM_PROCESS_INFORMATION* processInformation = nullptr;
+
+    /* We may need to do this in a loop as we don't know how much memory to preallocate. */
+    for (size_t i = 1; i <= 100; ++i)
+    {
+        status = processBuffer.Resize(i * PAGE_SIZE);
+        if (!NT_SUCCESS(status))
+        {
+            return;
+        }
+
+        ULONG informationLength = 0;
+        status = ::ZwQuerySystemInformation(XPF_SYSTEM_INFORMATION_CLASS::XpfSystemProcessInformation,
+                                            processBuffer.GetBuffer(),
+                                            static_cast<ULONG>(processBuffer.GetSize()),
+                                            &informationLength);
+        if (NT_SUCCESS(status))
+        {
+            /* Snapshotted the processes. */
+            break;
+        }
+    }
+
+    /* Could not snapshot the processes. */
+    if (!NT_SUCCESS(status))
+    {
+        return;
+    }
+
+    /* Success */
+    processInformation = static_cast<XPF_SYSTEM_PROCESS_INFORMATION*>(processBuffer.GetBuffer());
+
+
+    /* Walk all processes and best effort cache them. */
+    while (processInformation != nullptr)
+    {
+        xpf::String<wchar_t> processPath{ SYSMON_PAGED_ALLOCATOR };
+        PEPROCESS processObject = nullptr;
+        HANDLE processHandle = nullptr;
+
+        /* We're entering a new process loop. */
+        status = STATUS_SUCCESS;
+
+        /* If the process is the idle process we handle it separately. */
+        /* This process can't be opened like a normal process. */
+        if (processInformation->UniqueProcessId == 0)
+        {
+            ProcessCollectorHandleCreateProcess(HandleToULong(processInformation->UniqueProcessId),
+                                                L"idle");
+            goto ContinueLoop;
+        }
+
+        /* Find the associated eprocess. */
+        status = ::PsLookupProcessByProcessId(processInformation->UniqueProcessId,
+                                              &processObject);
+        if (!NT_SUCCESS(status))
+        {
+            goto ContinueLoop;
+        }
+
+        /* Grab a handle to the eprocess. */
+        status = ::ObOpenObjectByPointer(processObject,
+                                         OBJ_KERNEL_HANDLE,
+                                         NULL,
+                                         PROCESS_ALL_ACCESS,
+                                         *PsProcessType,
+                                         KernelMode,
+                                         &processHandle);
+        if (!NT_SUCCESS(status))
+        {
+            goto ContinueLoop;
+        }
+
+        /* Grab the image path. */
+        status = ProcessFilterGetProcessImagePath(processHandle,
+                                                  &processPath);
+        if (NT_SUCCESS(status))
+        {
+            /* If the path is empty, we'll only grab the name - can happen for registry or other system processes. */
+            if (processPath.IsEmpty())
+            {
+                status = ProcessFilterGetProcessImageName(processObject,
+                                                          &processPath);
+            }
+        }
+        if (!NT_SUCCESS(status))
+        {
+            goto ContinueLoop;
+        }
+
+        /* Add it to collector. */
+        SysMonLogTrace("Found preexisting process to be added in collector. Pid %d. Path %S",
+                       HandleToULong(processInformation->UniqueProcessId),
+                       processPath.View().Buffer());
+
+        ProcessCollectorHandleCreateProcess(HandleToULong(processInformation->UniqueProcessId),
+                                            processPath.View());
+        ProcessFilterGatherModulesForProcess(HandleToULong(processInformation->UniqueProcessId),
+                                             processObject,
+                                             processHandle);
+
+    ContinueLoop:
+        if (processHandle != nullptr)
+        {
+            NTSTATUS closeStatus = ::ObCloseHandle(processHandle,
+                                                   KernelMode);
+            processHandle = nullptr;
+            XPF_DEATH_ON_FAILURE(NT_SUCCESS(closeStatus));
+        }
+        if (processObject != nullptr)
+        {
+            ::ObDereferenceObjectDeferDelete(processObject);
+            processObject = nullptr;
+        }
+
+        if (!NT_SUCCESS(status))
+        {
+            SysMonLogWarning("Failed to gather information about the process with pid %d (%wZ) %!STATUS!",
+                             HandleToULong(processInformation->UniqueProcessId),
+                             &processInformation->ImageName,
+                             status);
+        }
+
+        void* next = (processInformation->NextEntryOffset != 0) ? xpf::AlgoAddToPointer(processInformation,
+                                                                                        processInformation->NextEntryOffset)
+                                                                : nullptr;
+        processInformation = static_cast<XPF_SYSTEM_PROCESS_INFORMATION*>(next);
+    }
 }

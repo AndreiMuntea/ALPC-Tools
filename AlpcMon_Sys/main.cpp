@@ -289,6 +289,14 @@ DriverEntry(
     isFirmareTableHandleFilterRoutineRegistered = TRUE;
 
     //
+    // Routines are still blocked at this point, so no further data
+    // can be processed. We quickly grab a snapshot of all running
+    // process information and store it.
+    //
+    ProcessFilterGatherPreexistingProcesses();
+    ImageFilterGatherSystemModules();
+
+    //
     // All good :)
     //
     status = STATUS_SUCCESS;

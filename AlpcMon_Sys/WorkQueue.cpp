@@ -189,13 +189,12 @@ KmHelper::WorkQueue::EnqueueWork(
     {
         /* Initialize the work item. */
         ::ExInitializeWorkItem(&item->WorkItem,
-                               KmHelper::WorkQueue::WorkQueueWorkItemRoutine,
+                               (PWORKER_THREAD_ROUTINE)KmHelper::WorkQueue::WorkQueueWorkItemRoutine,
                                item);
 
         /* Run the work item. */
         ::ExQueueWorkItem(&item->WorkItem,
-                          (Wait) ? WORK_QUEUE_TYPE::DelayedWorkQueue
-                                 : WORK_QUEUE_TYPE::NormalWorkQueue);
+                          WORK_QUEUE_TYPE::DelayedWorkQueue);
     }
 
     /* Re-enable deprecation warning. */

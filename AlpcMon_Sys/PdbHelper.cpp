@@ -111,20 +111,20 @@ typedef struct _CODEVIEW_PDB_INFO
 } CODEVIEW_PDB_INFO;
 
 /**
- * @brief       This extracts the program database information from an already opened file.
- *              The file must have been opened with read access. The file must be a dll or executable.
+ * @brief           This extracts the program database information from an already opened file.
+ *                  The file must have been opened with read access. The file must be a dll or executable.
  *
- * @param[in]   FileHandle      - The handle to the opened module.
- * @param[out]  PdbGuidAndAge   - Extracted PDB information required to download the pdb symbol.
- * @param[out]  PdbName         - Extracted PDB name required to download the pdb symbol.
+ * @param[in,out]   File            - The opened module file.
+ * @param[out]      PdbGuidAndAge   - Extracted PDB information required to download the pdb symbol.
+ * @param[out]      PdbName         - Extracted PDB name required to download the pdb symbol.
  *
- * @return      A proper NTSTATUS error code.
+ * @return          A proper NTSTATUS error code.
  */
 _Must_inspect_result_
 _IRQL_requires_max_(PASSIVE_LEVEL)
 static NTSTATUS XPF_API
 PdbHelperExtractPdbInformationFromFile(
-    _In_ HANDLE FileHandle,
+    _Inout_ SysMon::File::FileObject& File,
     _Out_ xpf::String<wchar_t>* PdbGuidAndAge,
     _Out_ xpf::String<wchar_t>* PdbName
 ) noexcept(true)
@@ -132,8 +132,7 @@ PdbHelperExtractPdbInformationFromFile(
     XPF_MAX_PASSIVE_LEVEL();
 
     NTSTATUS status = STATUS_UNSUCCESSFUL;
-    PVOID viewBase = NULL;
-    size_t viewSize = 0;
+    xpf::Buffer bufferFile{ SYSMON_PAGED_ALLOCATOR };
 
     ULONG debugEntrySize = 0;
     PIMAGE_DEBUG_DIRECTORY debugEntryDirectory = NULL;
@@ -158,19 +157,27 @@ PdbHelperExtractPdbInformationFromFile(
     (*PdbGuidAndAge).Reset();
     (*PdbName).Reset();
 
-    /* Map the file in the system addres space. */
-    status = KmHelper::File::MapFileInSystem(FileHandle,
-                                             &viewBase,
-                                             &viewSize);
+    /* We limit this to size_t max bytes. */
+    if (File.FileSize() > xpf::NumericLimits<size_t>::MaxValue())
+    {
+        status = STATUS_FILE_TOO_LARGE;
+        goto CleanUp;
+    }
+
+    /* Read the file in the system addres space. */
+    status = bufferFile.Resize(static_cast<size_t>(File.FileSize()));
     if (!NT_SUCCESS(status))
     {
-        viewBase = NULL;
-        viewSize = 0;
+        goto CleanUp;
+    }
+    status = File.Read(0, &bufferFile);
+    if (!NT_SUCCESS(status))
+    {
         goto CleanUp;
     }
 
     /* Go to the debug directory. */
-    debugEntryDirectory = static_cast<PIMAGE_DEBUG_DIRECTORY>(::RtlImageDirectoryEntryToData(viewBase,
+    debugEntryDirectory = static_cast<PIMAGE_DEBUG_DIRECTORY>(::RtlImageDirectoryEntryToData(bufferFile.GetBuffer(),
                                                                                              FALSE,
                                                                                              IMAGE_DIRECTORY_ENTRY_DEBUG,
                                                                                              &debugEntrySize));
@@ -197,7 +204,7 @@ PdbHelperExtractPdbInformationFromFile(
     }
 
     /* Print the signature and age to a buffer. */
-    rawData = static_cast<CODEVIEW_PDB_INFO*>(xpf::AlgoAddToPointer(viewBase,
+    rawData = static_cast<CODEVIEW_PDB_INFO*>(xpf::AlgoAddToPointer(bufferFile.GetBuffer(),
                                                                     imageDebugCodeViewSection->PointerToRawData));
 
     if (rawData->CodeViewSignature == CODEVIEW_PDB_NB10_SINGATURE)
@@ -264,9 +271,6 @@ PdbHelperExtractPdbInformationFromFile(
     }
 
 CleanUp:
-    /* Unmap the view. */
-    KmHelper::File::UnMapFileInSystem(&viewBase);
-
     return status;
 }
 
@@ -365,7 +369,7 @@ PdbHelperResolvePdb(
 
     xpf::String<char> ansiFileName{ SYSMON_PAGED_ALLOCATOR };
     xpf::String<char> ansiGuidAndAge{ SYSMON_PAGED_ALLOCATOR };
-    HANDLE fileHandle = NULL;
+    xpf::Optional<SysMon::File::FileObject> pdbFile;
 
     xpf::http::HttpResponse response;
 
@@ -415,12 +419,11 @@ PdbHelperResolvePdb(
     #undef HELPER_APPEND_DATA_TO_STRING
 
     /* Check if the pdb is there. */
-    status = KmHelper::File::OpenFile(PdbFullFilePath,
-                                      KmHelper::File::FileAccessType::kRead,
-                                      &fileHandle);
+    status = SysMon::File::FileObject::Create(PdbFullFilePath,
+                                              XPF_FILE_ACCESS_READ,
+                                              &pdbFile);
     if (NT_SUCCESS(status))
     {
-        KmHelper::File::CloseFile(&fileHandle);
         return STATUS_SUCCESS;
     }
 
@@ -436,19 +439,17 @@ PdbHelperResolvePdb(
     }
 
     /* Open the file and write the first chunk. */
-    status = KmHelper::File::OpenFile(PdbFullFilePath,
-                                      KmHelper::File::FileAccessType::kWrite,
-                                      &fileHandle);
+    status = SysMon::File::FileObject::Create(PdbFullFilePath,
+                                              XPF_FILE_ACCESS_WRITE,
+                                              &pdbFile);
     if (!NT_SUCCESS(status))
     {
         return status;
     }
-    status = KmHelper::File::WriteFile(fileHandle,
-                                       reinterpret_cast<const uint8_t*>(response.Body.Buffer()),
-                                       response.Body.BufferSize());
+    status = (*pdbFile).Write(response.Body.Buffer(),
+                              response.Body.BufferSize());
     if (!NT_SUCCESS(status))
     {
-        KmHelper::File::CloseFile(&fileHandle);
         return status;
     }
 
@@ -467,24 +468,21 @@ PdbHelperResolvePdb(
 
         if (!response.Body.IsEmpty())
         {
-            status = KmHelper::File::WriteFile(fileHandle,
-                                               reinterpret_cast<const uint8_t*>(response.Body.Buffer()),
-                                               response.Body.BufferSize());
+            status = (*pdbFile).Write(response.Body.Buffer(),
+                                      response.Body.BufferSize());
             if (!NT_SUCCESS(status))
             {
                 break;
             }
         }
     }
-
-    KmHelper::File::CloseFile(&fileHandle);
     return status;
 }
 
 _Use_decl_annotations_
 NTSTATUS XPF_API
 PdbHelper::ExtractPdbSymbolInformation(
-    _In_ HANDLE FileHandle,
+    _Inout_ SysMon::File::FileObject& File,
     _In_ _Const_ const xpf::StringView<wchar_t>& PdbDirectoryPath,
     _Out_ xpf::Vector<xpf::pdb::SymbolInformation>* Symbols
 ) noexcept(true)
@@ -493,10 +491,9 @@ PdbHelper::ExtractPdbSymbolInformation(
     XPF_DEATH_ON_FAILURE(nullptr != Symbols);
 
     NTSTATUS status = STATUS_UNSUCCESSFUL;
-    HANDLE pdbFileHandle = NULL;
 
-    PVOID pdbViewBase = NULL;
-    size_t pdbViewSize = 0;
+    xpf::Optional<SysMon::File::FileObject> pdbFile;
+    xpf::Buffer pdbFileBuffer{ SYSMON_PAGED_ALLOCATOR };
 
     xpf::String<wchar_t> pdbGuidAndAge{ SYSMON_PAGED_ALLOCATOR };
     xpf::String<wchar_t> pdbName{ SYSMON_PAGED_ALLOCATOR };
@@ -506,7 +503,7 @@ PdbHelper::ExtractPdbSymbolInformation(
     Symbols->Clear();
 
     /* Grab details about pdb. */
-    status = PdbHelperExtractPdbInformationFromFile(FileHandle,
+    status = PdbHelperExtractPdbInformationFromFile(File,
                                                     &pdbGuidAndAge,
                                                     &pdbName);
     if (!NT_SUCCESS(status))
@@ -532,31 +529,30 @@ PdbHelper::ExtractPdbSymbolInformation(
     }
 
     /* Map it in memory. */
-    status = KmHelper::File::OpenFile(pdbFullFilePath.View(),
-                                      KmHelper::File::FileAccessType::kRead,
-                                      &pdbFileHandle);
+    status = SysMon::File::FileObject::Create(pdbFullFilePath.View(),
+                                              XPF_FILE_ACCESS_READ,
+                                              &pdbFile);
     if (!NT_SUCCESS(status))
     {
-        return status;
-    }
-    status = KmHelper::File::MapFileInSystem(pdbFileHandle,
-                                             &pdbViewBase,
-                                             &pdbViewSize);
-    if (!NT_SUCCESS(status))
-    {
-        KmHelper::File::CloseFile(&pdbFileHandle);
         return status;
     }
 
     /* Now extract information. */
-    status = xpf::pdb::ExtractSymbols(pdbViewBase,
-                                      pdbViewSize,
-                                      Symbols);
-
-    /* Close and unmap the file first. */
-    KmHelper::File::UnMapFileInSystem(&pdbViewBase);
-    KmHelper::File::CloseFile(&pdbFileHandle);
-
-    /* Propagate status. */
-    return status;
+    if (File.FileSize() > xpf::NumericLimits<size_t>::MaxValue())
+    {
+        return STATUS_FILE_TOO_LARGE;
+    }
+    status = pdbFileBuffer.Resize(static_cast<size_t>(File.FileSize()));
+    if (!NT_SUCCESS(status))
+    {
+        return status;
+    }
+    status = File.Read(0, &pdbFileBuffer);
+    if (!NT_SUCCESS(status))
+    {
+        return status;
+    }
+    return xpf::pdb::ExtractSymbols(pdbFileBuffer.GetBuffer(),
+                                    pdbFileBuffer.GetSize(),
+                                    Symbols);
 }

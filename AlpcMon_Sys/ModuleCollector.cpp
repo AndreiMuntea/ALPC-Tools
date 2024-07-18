@@ -567,7 +567,7 @@ ModuleCollectorWorkerCallback(
     XPF_MAX_PASSIVE_LEVEL();
 
     uint32_t modulePathHash = 0;
-    HANDLE fileHandle = NULL;
+    xpf::Optional<SysMon::File::FileObject> moduleFile;
     NTSTATUS status = STATUS_UNSUCCESSFUL;
 
     KmHelper::File::HashType hashType = KmHelper::File::HashType::kMd5;
@@ -598,9 +598,9 @@ ModuleCollectorWorkerCallback(
     }
 
     /* Open the module path. */
-    status = KmHelper::File::OpenFile(data->Path.View(),
-                                      KmHelper::File::FileAccessType::kRead,
-                                      &fileHandle);
+    status = SysMon::File::FileObject::Create(data->Path.View(),
+                                              XPF_FILE_ACCESS_READ,
+                                              &moduleFile);
     if (!NT_SUCCESS(status))
     {
         goto CleanUp;
@@ -609,12 +609,23 @@ ModuleCollectorWorkerCallback(
     /* Hash the file. */
     if (data->Path.View().EndsWith(L".exe", false))
     {
-        status = KmHelper::File::HashFile(fileHandle,
+        status = KmHelper::File::HashFile((*moduleFile),
                                           hashType,
                                           hash);
         if (!NT_SUCCESS(status))
         {
             goto CleanUp;
+        }
+
+        /* Also log for tracing. */
+        {
+            const unsigned char* hashBuffer = static_cast<const unsigned char*>(hash.GetBuffer());
+            SysMonLogTrace("Successfully computed md5 hash for %S : %02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x",  // NOLINT(*)
+                            data->Path.View().Buffer(),                                                                                 // NOLINT(*)
+                            uint16_t{hashBuffer[0]},  uint16_t{hashBuffer[1]},  uint16_t{hashBuffer[2]},  uint16_t{hashBuffer[3]},      // NOLINT(*)
+                            uint16_t{hashBuffer[4]},  uint16_t{hashBuffer[5]},  uint16_t{hashBuffer[6]},  uint16_t{hashBuffer[7]},      // NOLINT(*)
+                            uint16_t{hashBuffer[8]},  uint16_t{hashBuffer[9]},  uint16_t{hashBuffer[10]}, uint16_t{hashBuffer[11]},     // NOLINT(*)
+                            uint16_t{hashBuffer[12]}, uint16_t{hashBuffer[13]}, uint16_t{hashBuffer[14]}, uint16_t{hashBuffer[15]});    // NOLINT(*)
         }
     }
 
@@ -622,7 +633,7 @@ ModuleCollectorWorkerCallback(
     if (data->Path.View().Substring(L"\\Windows\\", false, nullptr) ||
         data->Path.View().Substring(L"\\SystemRoot\\", false, nullptr))
     {
-        status = PdbHelper::ExtractPdbSymbolInformation(fileHandle,
+        status = PdbHelper::ExtractPdbSymbolInformation((*moduleFile),
                                                         L"\\??\\C:\\Symbols\\",
                                                         &symbolsInformation);
         if (!NT_SUCCESS(status))
@@ -646,7 +657,6 @@ ModuleCollectorWorkerCallback(
     }
 
 CleanUp:
-    KmHelper::File::CloseFile(&fileHandle);
     gModuleCollector->DestroyModuleContext(data);
 }
 

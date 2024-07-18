@@ -44,3 +44,16 @@ void XPF_API
 ImageFilterStop(
     void
 ) noexcept(true);
+
+/**
+ * @brief   This routine is used to gather information about the already loaded system modules.
+ *          We will block the creation of new ones until this is finished.
+ *          This must be called after registering the notification.
+ *
+ * @return  VOID.
+ */
+_IRQL_requires_max_(PASSIVE_LEVEL)
+void XPF_API
+ImageFilterGatherSystemModules(
+    void
+) noexcept(true);

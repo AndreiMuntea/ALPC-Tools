@@ -167,11 +167,11 @@ ImageFilterImageLoadNotifyRoutineCallback(
     //
     // Use the file object to retrieve the image path. FullImageName migh be partial.
     //
-    status = KmHelper::File::QueryFileNameFromObject(imageInfoExtended->FileObject,
-                                                     fullImagePath);
+    status = SysMon::File::QueryFileNameFromRawFileObject(imageInfoExtended->FileObject,
+                                                          &fullImagePath);
     if (!NT_SUCCESS(status))
     {
-        SysMonLogWarning("QueryFileNameFromObject failed with %!STATUS!",
+        SysMonLogWarning("QueryFileNameFromRawFileObject failed with %!STATUS!",
                          status);
         return;
     }
@@ -233,12 +233,123 @@ ImageFilterImageLoadNotifyRoutineCallback(
     }
 }
 
-/**
- * @brief   This routine is used to gather information about the already loaded system modules.
- *          We will block the creation of new ones until this is finished.
- *          This must be called after registering the notification.
- */
-static void XPF_API
+//
+// -------------------------------------------------------------------------------------------------------------------
+// | ****************************************************************************************************************|
+// |                                       ImageFilterStart                                                          |
+// | ****************************************************************************************************************|
+// -------------------------------------------------------------------------------------------------------------------
+//
+
+_IRQL_requires_max_(PASSIVE_LEVEL)
+_Must_inspect_result_
+NTSTATUS XPF_API
+ImageFilterStart(
+    void
+) noexcept(true)
+{
+    //
+    // https://learn.microsoft.com/en-us/windows-hardware/drivers/ddi/ntddk/nf-ntddk-pssetloadimagenotifyroutine
+    // The routine can be called only at PASSIVE_LEVEL.
+    //
+    XPF_MAX_PASSIVE_LEVEL();
+
+    NTSTATUS status = STATUS_UNSUCCESSFUL;
+
+    SysMonLogInfo("Registering image load notification routine...");
+
+    //
+    // First we check if we can use the newer method.
+    //
+    gApiPsSetLoadImageNotifyRoutineEx = static_cast<PFUNC_PsSetLoadImageNotifyRoutineEx>(
+                                        KmHelper::WrapperMmGetSystemRoutine(L"PsSetLoadImageNotifyRoutineEx"));
+    if (gApiPsSetLoadImageNotifyRoutineEx)
+    {
+        SysMonLogInfo("PsSetLoadImageNotifyRoutineEx found at %p.",
+                      gApiPsSetLoadImageNotifyRoutineEx);
+
+        status = gApiPsSetLoadImageNotifyRoutineEx((PLOAD_IMAGE_NOTIFY_ROUTINE)ImageFilterImageLoadNotifyRoutineCallback,
+                                                   FLAGS_PS_IMAGE_NOTIFY_CONFLICTING_ARCHITECTURE);
+    }
+    else
+    {
+        SysMonLogInfo("PsSetLoadImageNotifyRoutineEx not found! Will use the older variant.");
+
+        status = ::PsSetLoadImageNotifyRoutine((PLOAD_IMAGE_NOTIFY_ROUTINE)ImageFilterImageLoadNotifyRoutineCallback);
+    }
+
+    //
+    // Let's inspect the result.
+    //
+    if (!NT_SUCCESS(status))
+    {
+        SysMonLogError("Registering image load notify routine failed with status = %!STATUS!",
+                       status);
+        return status;
+    }
+
+    //
+    // All good.
+    //
+    SysMonLogInfo("Successfully registered image load notification routine!");
+    return STATUS_SUCCESS;
+}
+
+//
+// -------------------------------------------------------------------------------------------------------------------
+// | ****************************************************************************************************************|
+// |                                       ImageFilterStop                                                           |
+// | ****************************************************************************************************************|
+// -------------------------------------------------------------------------------------------------------------------
+//
+
+_IRQL_requires_max_(PASSIVE_LEVEL)
+void XPF_API
+ImageFilterStop(
+    void
+) noexcept(true)
+{
+    //
+    // https://learn.microsoft.com/en-us/windows-hardware/drivers/ddi/ntddk/nf-ntddk-pssetloadimagenotifyroutine
+    // The routine can be called only at PASSIVE_LEVEL.
+    //
+    XPF_MAX_PASSIVE_LEVEL();
+
+    NTSTATUS status = STATUS_UNSUCCESSFUL;
+
+    SysMonLogInfo("Unregistering image load notification routine...");
+
+    status = ::PsRemoveLoadImageNotifyRoutine((PLOAD_IMAGE_NOTIFY_ROUTINE)ImageFilterImageLoadNotifyRoutineCallback);
+    gApiPsSetLoadImageNotifyRoutineEx = nullptr;
+
+    //
+    // We don't expect a failure. So assert here and investigate what happened.
+    //
+    if (!NT_SUCCESS(status))
+    {
+        XPF_ASSERT(false);
+
+        SysMonLogCritical("Unregistering image load notification routine failed with status = %!STATUS!",
+                          status);
+        return;
+    }
+
+    //
+    // All good.
+    //
+    SysMonLogInfo("Successfully unregistered image load notification routine!");
+}
+
+//
+// -------------------------------------------------------------------------------------------------------------------
+// | ****************************************************************************************************************|
+// |                                       ImageFilterGatherSystemModules                                            |
+// | ****************************************************************************************************************|
+// -------------------------------------------------------------------------------------------------------------------
+//
+
+_Use_decl_annotations_
+void XPF_API
 ImageFilterGatherSystemModules(
     void
 ) noexcept(true)
@@ -297,116 +408,4 @@ ImageFilterGatherSystemModules(
                                              processModules->Modules[i].ImageSize);
         }
     }
-}
-
-//
-// -------------------------------------------------------------------------------------------------------------------
-// | ****************************************************************************************************************|
-// |                                       ImageFilterStart                                                          |
-// | ****************************************************************************************************************|
-// -------------------------------------------------------------------------------------------------------------------
-//
-
-_IRQL_requires_max_(PASSIVE_LEVEL)
-_Must_inspect_result_
-NTSTATUS XPF_API
-ImageFilterStart(
-    void
-) noexcept(true)
-{
-    //
-    // https://learn.microsoft.com/en-us/windows-hardware/drivers/ddi/ntddk/nf-ntddk-pssetloadimagenotifyroutine
-    // The routine can be called only at PASSIVE_LEVEL.
-    //
-    XPF_MAX_PASSIVE_LEVEL();
-
-    NTSTATUS status = STATUS_UNSUCCESSFUL;
-
-    SysMonLogInfo("Registering image load notification routine...");
-
-    //
-    // First we check if we can use the newer method.
-    //
-    gApiPsSetLoadImageNotifyRoutineEx = static_cast<PFUNC_PsSetLoadImageNotifyRoutineEx>(
-                                        KmHelper::WrapperMmGetSystemRoutine(L"PsSetLoadImageNotifyRoutineEx"));
-    if (gApiPsSetLoadImageNotifyRoutineEx)
-    {
-        SysMonLogInfo("PsSetLoadImageNotifyRoutineEx found at %p.",
-                      gApiPsSetLoadImageNotifyRoutineEx);
-
-        status = gApiPsSetLoadImageNotifyRoutineEx((PLOAD_IMAGE_NOTIFY_ROUTINE)ImageFilterImageLoadNotifyRoutineCallback,
-                                                   FLAGS_PS_IMAGE_NOTIFY_CONFLICTING_ARCHITECTURE);
-    }
-    else
-    {
-        SysMonLogInfo("PsSetLoadImageNotifyRoutineEx not found! Will use the older variant.");
-
-        status = ::PsSetLoadImageNotifyRoutine((PLOAD_IMAGE_NOTIFY_ROUTINE)ImageFilterImageLoadNotifyRoutineCallback);
-    }
-
-    //
-    // Let's inspect the result.
-    //
-    if (!NT_SUCCESS(status))
-    {
-        SysMonLogError("Registering image load notify routine failed with status = %!STATUS!",
-                       status);
-        return status;
-    }
-
-    //
-    // Now let's gather the already loaded system modules.
-    //
-    ImageFilterGatherSystemModules();
-
-    //
-    // All good.
-    //
-    SysMonLogInfo("Successfully registered image load notification routine!");
-    return STATUS_SUCCESS;
-}
-
-//
-// -------------------------------------------------------------------------------------------------------------------
-// | ****************************************************************************************************************|
-// |                                       ImageFilterStop                                                           |
-// | ****************************************************************************************************************|
-// -------------------------------------------------------------------------------------------------------------------
-//
-
-_IRQL_requires_max_(PASSIVE_LEVEL)
-void XPF_API
-ImageFilterStop(
-    void
-) noexcept(true)
-{
-    //
-    // https://learn.microsoft.com/en-us/windows-hardware/drivers/ddi/ntddk/nf-ntddk-pssetloadimagenotifyroutine
-    // The routine can be called only at PASSIVE_LEVEL.
-    //
-    XPF_MAX_PASSIVE_LEVEL();
-
-    NTSTATUS status = STATUS_UNSUCCESSFUL;
-
-    SysMonLogInfo("Unregistering image load notification routine...");
-
-    status = ::PsRemoveLoadImageNotifyRoutine((PLOAD_IMAGE_NOTIFY_ROUTINE)ImageFilterImageLoadNotifyRoutineCallback);
-    gApiPsSetLoadImageNotifyRoutineEx = nullptr;
-
-    //
-    // We don't expect a failure. So assert here and investigate what happened.
-    //
-    if (!NT_SUCCESS(status))
-    {
-        XPF_ASSERT(false);
-
-        SysMonLogCritical("Unregistering image load notification routine failed with status = %!STATUS!",
-                          status);
-        return;
-    }
-
-    //
-    // All good.
-    //
-    SysMonLogInfo("Successfully unregistered image load notification routine!");
 }

@@ -118,6 +118,9 @@
     <ClCompile Include="ApcQueue.cpp">
       <Filter>Source Files\Utils</Filter>
     </ClCompile>
+    <ClCompile Include="FileObject.cpp">
+      <Filter>Source Files\Utils</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="trace.hpp">
@@ -181,6 +184,9 @@
       <Filter>Header Files\Collectors</Filter>
     </ClInclude>
     <ClInclude Include="ApcQueue.hpp">
+      <Filter>Header Files\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="FileObject.hpp">
       <Filter>Header Files\Utils</Filter>
     </ClInclude>
   </ItemGroup>
