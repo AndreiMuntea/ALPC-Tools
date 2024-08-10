@@ -538,20 +538,35 @@ PdbHelper::ExtractPdbSymbolInformation(
     }
 
     /* Now extract information. */
-    if (File.FileSize() > xpf::NumericLimits<size_t>::MaxValue())
+    if ((*pdbFile).FileSize() > xpf::NumericLimits<size_t>::MaxValue())
     {
         return STATUS_FILE_TOO_LARGE;
     }
-    status = pdbFileBuffer.Resize(static_cast<size_t>(File.FileSize()));
+    status = pdbFileBuffer.Resize(static_cast<size_t>((*pdbFile).FileSize()));
     if (!NT_SUCCESS(status))
     {
         return status;
     }
-    status = File.Read(0, &pdbFileBuffer);
+    status = (*pdbFile).Read(0, &pdbFileBuffer);
     if (!NT_SUCCESS(status))
     {
         return status;
     }
+
+    /* This assumes an aligned size - so fill with 0. */
+    const size_t alignedSize = xpf::AlgoAlignValueUp(pdbFileBuffer.GetSize(),
+                                                     size_t{PAGE_SIZE});
+    if (alignedSize < pdbFileBuffer.GetSize())
+    {
+        return STATUS_FILE_TOO_LARGE;
+    }
+    status = pdbFileBuffer.Resize(alignedSize);
+    if (!NT_SUCCESS(status))
+    {
+        return status;
+    }
+
+    /* And finally extract the symbols. */
     return xpf::pdb::ExtractSymbols(pdbFileBuffer.GetBuffer(),
                                     pdbFileBuffer.GetSize(),
                                     Symbols);

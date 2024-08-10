@@ -14,6 +14,7 @@
 #pragma once
 
 #include "precomp.hpp"
+#include "StackDecorator.hpp"
 
 namespace SysMon
 {
@@ -198,6 +199,7 @@ class ProcessCreateEvent final : public xpf::IEvent
      uint32_t m_ProcessPid = 0;
      xpf::String<wchar_t> m_ProcessPath{ SYSMON_PAGED_ALLOCATOR };
      SysMon::ProcessArchitecture m_ProcessArchitecture = SysMon::ProcessArchitecture::MAX;
+     SysMon::StackTrace m_StackTrace;
 
      /**
       * @brief   Default MemoryAllocator is our friend as it requires access to the private

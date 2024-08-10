@@ -203,7 +203,6 @@ ProcessFilterProcessNotifyRoutineCallback(
         //
         ProcessCollectorHandleCreateProcess(HandleToUlong(ProcessId),
                                             processPath);
-
         //
         // And dispatch event.
         //

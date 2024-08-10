@@ -75,6 +75,38 @@ SysMon::ProcessCreateEvent::Create(
     eventInstanceReference.m_ProcessArchitecture = ProcessArchitecture;
 
     //
+    // And finally capture the stack trace.
+    //
+    status = SysMon::StackTraceCapture(&eventInstanceReference.m_StackTrace);
+    if (!NT_SUCCESS(status))
+    {
+        return status;
+    }
+    DbgPrintEx(DPFLTR_IHVDRIVER_ID,
+                   DPFLTR_ERROR_LEVEL,
+                   "Starting to decorate at 0x%llx\r\n",
+                   xpf::ApiCurrentTime());
+    status = SysMon::StackTraceDecorate(&eventInstanceReference.m_StackTrace);
+    if (!NT_SUCCESS(status))
+    {
+        return status;
+    }
+    DbgPrintEx(DPFLTR_IHVDRIVER_ID,
+                   DPFLTR_ERROR_LEVEL,
+                   "Finisehd to decorate at 0x%llx\r\n",
+                   xpf::ApiCurrentTime());
+    for (size_t i = 0; i < eventInstanceReference.m_StackTrace.DecoratedFrames.Size(); ++i)
+    {
+        DbgPrintEx(DPFLTR_IHVDRIVER_ID,
+                   DPFLTR_ERROR_LEVEL,
+                   "%S\r\n",
+                   eventInstanceReference.m_StackTrace.DecoratedFrames[i].View().Buffer());
+    }
+    DbgPrintEx(DPFLTR_IHVDRIVER_ID,
+               DPFLTR_ERROR_LEVEL,
+               "=================================\r\n");
+
+    //
     // And finally cast to generic event.
     //
     Event = xpf::DynamicUniquePointerCast<xpf::IEvent, SysMon::ProcessCreateEvent>(eventInstance);

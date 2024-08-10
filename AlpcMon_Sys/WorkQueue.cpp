@@ -194,7 +194,7 @@ KmHelper::WorkQueue::EnqueueWork(
 
         /* Run the work item. */
         ::ExQueueWorkItem(&item->WorkItem,
-                          WORK_QUEUE_TYPE::DelayedWorkQueue);
+                          WORK_QUEUE_TYPE::BackgroundWorkQueue);
     }
 
     /* Re-enable deprecation warning. */

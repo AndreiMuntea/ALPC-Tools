@@ -230,8 +230,10 @@ HookEngineChangeState(
     error = DetourTransactionBegin();
     if (error != NO_ERROR)
     {
-        XPF_ASSERT(false);
-
+        if (InstallHooks)
+        {
+            XPF_ASSERT(false);
+        }
         return STATUS_INVALID_TRANSACTION;
     }
 
@@ -241,8 +243,10 @@ HookEngineChangeState(
     status = HookEnginePrepareThreads();
     if (!NT_SUCCESS(status))
     {
-        XPF_ASSERT(false);
-
+        if (InstallHooks)
+        {
+            XPF_ASSERT(false);
+        }
         goto CleanUp;
     }
 
@@ -252,8 +256,10 @@ HookEngineChangeState(
     status = HookEnginePrepareHooks(InstallHooks);
     if (!NT_SUCCESS(status))
     {
-        XPF_ASSERT(false);
-
+        if (InstallHooks)
+        {
+            XPF_ASSERT(false);
+        }
         goto CleanUp;
     }
 
@@ -263,7 +269,10 @@ HookEngineChangeState(
     error = DetourTransactionCommit();
     if (error != NO_ERROR)
     {
-        XPF_ASSERT(false);
+        if (InstallHooks)
+        {
+            XPF_ASSERT(false);
+        }
 
         status = STATUS_INVALID_TRANSACTION;
         goto CleanUp;

@@ -377,6 +377,7 @@
     <ClCompile Include="RegistryUtils.cpp" />
     <ClCompile Include="RpcAlpcInspectionPlugin.cpp" />
     <ClCompile Include="RpcEngine.cpp" />
+    <ClCompile Include="StackDecorator.cpp" />
     <ClCompile Include="ThreadFilter.cpp" />
     <ClCompile Include="UmHookPlugin.cpp" />
     <ClCompile Include="FileObject.cpp" />
@@ -406,6 +407,7 @@
     <ClInclude Include="RegistryUtils.hpp" />
     <ClInclude Include="RpcAlpcInspectionPlugin.hpp" />
     <ClInclude Include="RpcEngine.hpp" />
+    <ClInclude Include="StackDecorator.hpp" />
     <ClInclude Include="ThreadFilter.hpp" />
     <ClInclude Include="trace.hpp" />
     <ClInclude Include="UmHookPlugin.hpp" />
