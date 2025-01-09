@@ -1,7 +1,7 @@
 
 ## About
 This project contains a part of the work I did for my Master's thesis. It has been rewritten to use the xplatform library.
-It uses manually crafted ALPC calls to existing RPC servers and to documented (and undocumented) methods. It has a minimalistic implementation of DCE (both NDR  and NDR64) serialization protocol (basically I implemented what was required for my needs).
+It uses manually crafted ALPC calls to existing RPC servers and to documented (and undocumented) methods. It has a minimalistic implementation of DCE (both NDR  and NDR64) serialization protocol (basically I implemented what was required for my needs). It includes the monitoring solution on how we can intercept the messages between two processes based on API hooking.
 
 It contains some simple commands such as:
  - RunTask       - Uses a call to SchRpcRun() to run an existing task;
@@ -9,6 +9,19 @@ It contains some simple commands such as:
  - DeleteFwRules - Uses FWDeleteAllFirewallRules() to remove the firewall rules;
  - CreateService - Uses RCreateServiceW() to create a kernel mode service;
  - CreateUser    - Uses SamrCreateUser2InDomain() to create a new user;
+
+As stated above, this was the work I did for my Master's thesis, and it was presented at an academic conference as well. If you find it useful, please cite it with:
+```
+@INPROCEEDINGS{10554183,
+  author={Andrei-Marius, Muntea and Radu-Marian, Portase and Gheorghe, Sebestyen-Pal},
+  booktitle={2024 IEEE International Conference on Automation, Quality and Testing, Robotics (AQTR)}, 
+  title={Monitoring of RPC Messages with ALPC-Level API Hooking}, 
+  year={2024},
+  volume={},
+  number={},
+  pages={1-6},
+  doi={10.1109/AQTR61889.2024.10554183}}
+```
 
 ## References
 Great materials I found online and I used when doing the work on this project:
